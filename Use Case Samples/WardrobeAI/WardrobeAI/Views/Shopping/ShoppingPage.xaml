@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:syncfusion="clr-namespace:Syncfusion.Maui.Core;assembly=Syncfusion.Maui.Core"
@@ -68,14 +68,14 @@
                            TextColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource SecondaryDark}}" FontSize="16"/>
                     </VerticalStackLayout>
 
-                    <!-- Sign-in prompt (shown when no user is signed in) -->
+                    <!-- Fallback status shown only if the default user is unavailable. -->
                     <Border IsVisible="{Binding IsSignedOut}"
                         BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}"
                         StrokeShape="RoundRectangle 16" StrokeThickness="0" Padding="16">
                         <VerticalStackLayout Spacing="6">
-                            <Label Style="{StaticResource SubtitleMedium}" Text="Sign in to see your wardrobe gaps"
+                            <Label Style="{StaticResource SubtitleMedium}" Text="Wardrobe data is unavailable"
                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
-                            <Label Style="{StaticResource BodySmall}" Text="We'll analyze your closet, list the missing essentials, and curate pieces that pair with what you already own."
+                            <Label Style="{StaticResource BodySmall}" Text="The shopping analysis cannot be loaded right now. Try reopening this page."
                                LineBreakMode="WordWrap"
                                TextColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource SecondaryDark}}"
                                FontSize="13"/>

@@ -558,19 +558,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
             }
 
             IsOutfitLoading = true;
-            //if (userId <= 0)
-            //{
-            //    SetOutfitPlaceholder("User profile unavailable.");
-            //    return;
-            //}
-
             var user = await _userRepository.GetAsync(userId);
-            //if (user is null)
-            //{
-            //    SetOutfitPlaceholder("User profile not found.");
-            //    return;
-            //}
-
             // Occasion: prefer today's planned outfit. Fall back to "Casual".
             var today = DateTime.Today;
             var occasion = await ResolveTodaysOccasionAsync(userId, today)

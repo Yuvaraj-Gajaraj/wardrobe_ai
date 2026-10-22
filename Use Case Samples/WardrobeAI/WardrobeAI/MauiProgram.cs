@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -77,11 +77,10 @@ namespace WardrobeAI
             builder.Services.AddSingleton<IUserContext, UserContext>();
 
             // AI services (P2.8 — Azure OpenAI daily outfit recommendation).
-            // The defaults (Endpoint / ApiKey / Deployment / ApiVersion /
-            // Temperature / MaxOutputTokens) are defined on AzureOpenAiOptions
-            // itself and are picked up by the Options system automatically —
-            // any IOptions<AzureOpenAiOptions> consumer will see those values.
-            // Override the values here once the user provides their own.
+            // AzureOpenAiOptions defaults are used unless a configuration
+            // source is explicitly bound here. Replace the placeholders for
+            // local testing or add a secure configuration source when enabling
+            // live Azure OpenAI calls.
             builder.Services.AddOptions<AzureOpenAiOptions>();
             builder.Services.AddSingleton<IAIOutfitRecommendationService, AzureOpenAiOutfitRecommendationService>();
             // Smart Shopping AI service (P6.0.1b — randomized + pair-aware
