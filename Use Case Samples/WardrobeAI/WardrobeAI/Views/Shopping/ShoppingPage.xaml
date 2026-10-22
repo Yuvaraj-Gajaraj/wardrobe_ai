@@ -69,7 +69,7 @@
                     </VerticalStackLayout>
 
                     <!-- Fallback status shown only if the default user is unavailable. -->
-                    <Border IsVisible="{Binding IsSignedOut}"
+                    <Border IsVisible="{Binding IsUnavailable}"
                         BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}"
                         StrokeShape="RoundRectangle 16" StrokeThickness="0" Padding="16">
                         <VerticalStackLayout Spacing="6">

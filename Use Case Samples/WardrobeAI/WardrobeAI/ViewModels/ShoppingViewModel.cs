@@ -86,7 +86,6 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         AnalysisSubtitle = "Your wardrobe gaps will appear here.";
         SortLabel = "SORT: BEST VALUE";
         IsLoading = false;
-        IsSignedOut = true;
 
         MissingEssentials = new ObservableCollection<EssentialItemRow>();
         Recommendations = new ObservableCollection<ProductCard>();
@@ -105,7 +104,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
     [ObservableProperty] private string _analysisSubtitle = string.Empty;
     [ObservableProperty] private string _sortLabel = string.Empty;
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private bool _isSignedOut;
+    [ObservableProperty] private bool _isUnavailable;
     [ObservableProperty] private bool _hasEssentialCards;
 
     // ---- Bound collections ----
@@ -131,11 +130,11 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             var userId = _userContext.GetCurrentUserId();
             if (userId <= 0)
             {
-                ResetForSignedOut();
+                ResetUnavailableData();
                 return;
             }
 
-            IsSignedOut = false;
+            IsUnavailable = false;
 
             // 1. Closet + user.
             var closet = await _closetRepository.GetAllForUserAsync(userId);
@@ -712,9 +711,9 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         }
     }
 
-    private void ResetForSignedOut()
+    private void ResetUnavailableData()
     {
-        IsSignedOut = true;
+        IsUnavailable = true;
         CompletionScore = 0;
         ItemsOwned = 0;
         ItemsTarget = 25;
