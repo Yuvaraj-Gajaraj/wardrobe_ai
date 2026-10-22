@@ -22,20 +22,20 @@ WardrobeAI is a .NET MAUI sample app that demonstrates an AI-assisted wardrobe e
 | `SfAvatarView` | Dashboard greeting, desktop side rail, and Profile header |
 | `SfRotator` | Outfit and shopping product cards |
 | `SfRadialGauge` | Outfit match and planner scores |
-| `SfBusyIndicator` | AI-generation loading state |
 | `SfChipGroup` | Clothing filters, attributes, occasion, and style selection |
-| `SfComboBox` | Clothing attribute selection |
+| `SfComboBox` | Seven clothing attribute selectors in the Add Clothing popup |
 | `SfButton` | Quick actions, save actions, and shopping calls to action |
 | `SfPopup` | Add Clothing, Plan an Outfit, and Add Style dialogs |
 | `SfDatePicker` | Outfit planning date selection |
-| `SfAccordion` | Shopping recommendation details |
+| `SfAccordion` | Expanding the shopping recommendation methodology |
 
 ## Project Structure
 
 ```text
 WardrobeAI/
 ├── AI/                  Azure OpenAI services, prompt builders, and scoring
-├── Constants/           Clothing attribute options
+├── Constants/           Clothing attribute options (`WardrobeAI.Constants` namespace)
+├── Constants.cs         Project-wide `AppConstants` (`WardrobeAI` root namespace)
 ├── Contracts/           Shared data contracts, including weather
 ├── Converters/          XAML value converters
 ├── Data/                EF Core database context
