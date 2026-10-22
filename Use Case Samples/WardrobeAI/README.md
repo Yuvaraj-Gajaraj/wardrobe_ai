@@ -29,6 +29,8 @@ WardrobeAI is a .NET MAUI sample app that demonstrates an AI-assisted wardrobe e
 | `SfDatePicker` | Outfit planning date selection |
 | `SfAccordion` | Expanding the shopping recommendation methodology |
 
+This table lists controls used in the XAML implementation; controls such as `SfCard` that are not used by the sample are intentionally omitted.
+
 ## Project Structure
 
 ```text
