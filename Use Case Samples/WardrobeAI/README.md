@@ -1,165 +1,150 @@
 # WardrobeAI
 
-A .NET MAUI sample that showcases how to build an AI-driven wardrobe
-assistant with **Syncfusion's .NET MAUI controls**. The app lets a user
-catalog their closet, plan an outfit for a given occasion and weather,
-and discover missing essentials to shop for — all driven by Azure
-OpenAI (with a deterministic offline fallback when no model is wired up).
+WardrobeAI is a .NET MAUI sample app that demonstrates an AI-assisted wardrobe experience using Syncfusion .NET MAUI controls. Users can catalog clothing, get outfit suggestions for an occasion and weather, plan outfits, and explore wardrobe essentials to shop for. Azure OpenAI powers outfit and shopping recommendations when configured; deterministic fallback behavior is available without an Azure model setup.
 
-## Sample Overview
+## Features
 
-The app boots directly into a five-tab Syncfusion `SfTabView` shell:
-
-- **Dashboard** — today's AI-curated outfit suggestion, live weather
-  chip, quick actions, upcoming plans.
-- **Closet** — gallery of clothing items with category filter chips
-  and an "Add Clothing" popup (camera/gallery capture + 7 attribute
-  chip groups).
-- **Plan** — occasion chips (Work / Meeting / Casual / Party), live
-  weather, AI-generated outfit hero with four radial score gauges,
-  alternatives, "Why this works" blurb, and a Plan-an-outfit popup.
-- **Shop** — wardrobe completion score, budget widget, AI-curated
-  missing-essentials cards with deep links to real retailers
-  (Amazon / Flipkart / Myntra / Nordstrom / ASOS).
-- **Profile** — style preferences, palette swatches, achievements,
-  monthly budget slider, settings list.
-
-On desktop (Windows / Mac Catalyst), the same five views are arranged
-in a persistent split-view shell with a side rail toggling between
-the Dashboard+Shopping and Closet+Planner panes.
+- Five main areas: Dashboard, Closet, Plan, Shop, and Profile.
+- Dashboard with a daily outfit suggestion, weather summary, quick actions, and upcoming plans.
+- Closet gallery with category filters and an Add Clothing popup that supports camera/gallery capture and clothing attributes.
+- Outfit planning by occasion and date, with weather-aware recommendations, match scores, alternatives, and an explanation of the recommendation.
+- Shopping recommendations for wardrobe essentials, a completion score, budget information, and retailer deep links.
+- Profile controls for style preferences, palette, achievements, and monthly budget.
+- Mobile tab navigation and desktop split-view layouts for Windows and Mac Catalyst.
+- Live AI recommendations through Azure OpenAI when configured, with deterministic outfit and shopping fallbacks otherwise.
+- Weather and geolocation data from Open-Meteo; no API key is required for these services.
 
 ## Syncfusion Controls Demonstrated
 
-| Control | Used in |
+| Control | Example use |
 | --- | --- |
-| `SfTabView` | Main tabbed shell (`MainTabHostPage`) |
-| `SfAvatarView` | Dashboard greeting, desktop side rail, Profile header |
-| `SfRotator` | Today's Suggestion hero, Outfit Planner hero, Shopping products |
-| `SfRadialGauge` | Today's Match score, four per-axis scores on the planner |
+| `SfTabView` | Main mobile tab shell |
+| `SfAvatarView` | Dashboard greeting, desktop side rail, and Profile header |
+| `SfRotator` | Outfit and shopping product cards |
+| `SfRadialGauge` | Outfit match and planner scores |
 | `SfBusyIndicator` | AI-generation loading state |
-| `SfChipGroup` | Closet filter, Add-Clothing attribute pickers, Planner occasion chips, Profile style chips |
-| `SfComboBox` | Add-Clothing attribute pickers |
-| `SfButton` | Quick actions, FABs, save buttons, "Shop Now" CTA |
-| `SfPopup` | Add-Clothing popup, Plan-an-outfit popup, Add-Style popup |
-| `SfDatePicker` | Plan-an-outfit date picker |
-| `SfAccordion` | Shopping "How we picked these" disclosure |
+| `SfChipGroup` | Clothing filters, attributes, occasion, and style selection |
+| `SfComboBox` | Clothing attribute selection |
+| `SfButton` | Quick actions, save actions, and shopping calls to action |
+| `SfPopup` | Add Clothing, Plan an Outfit, and Add Style dialogs |
+| `SfDatePicker` | Outfit planning date selection |
+| `SfAccordion` | Shopping recommendation details |
 
-## Prerequisites
+## Project Structure
 
-- .NET 10 SDK
-- MAUI workload:
+```text
+WardrobeAI/
+├── AI/                  Azure OpenAI services, prompt builders, and scoring
+├── Constants/           Clothing attribute options
+├── Contracts/           Shared data contracts, including weather
+├── Converters/          XAML value converters
+├── Data/                EF Core database context
+├── Helpers/             Result type and utility extensions
+├── Models/              User, clothing, outfit, and shopping models
+├── Platforms/           Android, iOS, Windows, and Mac Catalyst code
+├── Repositories/        SQLite-backed data access
+├── Resources/           Images, fonts, styles, and bundled raw assets
+├── Services/            Weather, user, wardrobe, budget, and navigation services
+├── ViewModels/          MVVM viewmodels for the app's pages and hosts
+└── Views/               Dashboard, Closet, Planner, Shopping, Profile, and host pages
+```
+
+The solution file is `WardrobeAI.slnx`, and the app project is `WardrobeAI/WardrobeAI.csproj`.
+
+## Quick Start
+
+### Prerequisites
+
+- .NET 10 SDK.
+- .NET MAUI workload. Install it if needed:
+
   ```bash
   dotnet workload install maui
   ```
-- Azure OpenAI resource (optional — the app falls back to a
-  deterministic outfit / shopping picker when not configured)
 
-## Setup
+- An Azure OpenAI resource is optional. Without configured Azure credentials, the app uses deterministic fallback recommendations.
+- A Syncfusion license key is optional for trial use. Without a key, Syncfusion controls run in trial mode and may display a watermark.
 
-1. Clone the repository.
-2. Restore the .NET workloads and packages:
-   ```bash
-   dotnet workload restore
-   dotnet restore WardrobeAI/WardrobeAI.csproj
-   ```
-3. (Optional) Wire up Azure OpenAI by editing
-   `WardrobeAI/AI/AzureOpenAiOptions.cs` or by overriding the bound
-   configuration in your `MauiProgram.cs`. The default values
-   (`"END_POINT"`, `"API_KEY"`, `"MODEL"`, `"API_VERSION"`) are
-   placeholders — the app detects an unconfigured state and uses the
-   deterministic fallback path, so the sample is fully runnable
-   without an Azure subscription.
-4. Register your Syncfusion license key. The license is **not**
-   hard-coded in the repo. Set it as an environment variable before
-   running the app:
-   ```bash
-   # Windows (PowerShell)
-   $env:SYNCFUSION_LICENSE_KEY = "your-key-here"
-   # macOS / Linux
-   export SYNCFUSION_LICENSE_KEY="your-key-here"
-   ```
-   `MauiProgram.cs` reads `SYNCFUSION_LICENSE_KEY` and calls
-   `SyncfusionLicenseProvider.RegisterLicense(...)` at startup when
-   the variable is set. When the variable is empty the controls
-   render in trial mode (watermarked).
+### Restore
 
-## AI Setup Steps
+Run these commands from the `Use Case Samples/WardrobeAI` directory:
 
-The sample ships with a deterministic offline path so the AI
-endpoints are runnable without any Azure wiring. To enable the live
-LLM path:
+```bash
+dotnet workload restore
+dotnet restore WardrobeAI/WardrobeAI.csproj
+```
 
-1. Create an Azure OpenAI resource and a chat-completion deployment
-   (for example `gpt-4o`).
-2. Populate `AzureOpenAiOptions` at runtime (the sample's default
-   binding reads from `appsettings.json` / `Preferences`, but you can
-   wire any `IConfiguration` source — environment variables, user
-   secrets, etc.). The four fields are:
-   - `Endpoint` — `https://<your-resource>.openai.azure.com/` (trailing
-     slash required)
-   - `ApiKey` — Azure OpenAI key
-   - `Deployment` — deployment name (e.g. `gpt-4o`)
-   - `ApiVersion` — e.g. `2024-08-01-preview`
-3. Restart the app. Once `IsConfigured` returns `true` the
-   `AzureOpenAiOutfitRecommendationService` and
-   `AzureOpenAiSmartShoppingService` will start calling Chat
-   Completions with JSON-schema structured outputs (the deterministic
-   fallback is no longer hit).
-4. Weather and geolocation use the free, key-less
-   [Open-Meteo](https://open-meteo.com/) APIs — no setup required.
+### Configure Syncfusion licensing (optional)
 
-## Run Instructions
+Set `SYNCFUSION_LICENSE_KEY` in the environment before launching. The app reads this variable at startup; the key is not stored in the repository.
 
-Pick the target platform from the project file and run:
+```powershell
+# Windows PowerShell
+$env:SYNCFUSION_LICENSE_KEY = "your-key-here"
+```
+
+```bash
+# macOS / Linux
+export SYNCFUSION_LICENSE_KEY="your-key-here"
+```
+
+### Configure Azure OpenAI (optional)
+
+The required fields are `Endpoint`, `ApiKey`, `Deployment`, and `ApiVersion`. The values in `WardrobeAI/AI/AzureOpenAiOptions.cs` are placeholders, and `MauiProgram.cs` currently registers the options defaults. To enable live Azure recommendations, replace those placeholder values for local testing or wire a suitable configuration source in `MauiProgram.cs`. Keep credentials out of source control. When the options are not configured, deterministic fallback recommendations are used.
+
+### Build and run
+
+Use a platform supported by the host operating system and installed MAUI workload. iOS and Mac Catalyst require macOS. The project targets Android, iOS, Mac Catalyst, and Windows where supported by the host.
 
 ```bash
 # Windows
 dotnet build WardrobeAI/WardrobeAI.csproj -f net10.0-windows10.0.19041.0
-dotnet run  --project WardrobeAI/WardrobeAI.csproj -f net10.0-windows10.0.19041.0
+dotnet run --project WardrobeAI/WardrobeAI.csproj -f net10.0-windows10.0.19041.0
 
 # Android
 dotnet build WardrobeAI/WardrobeAI.csproj -f net10.0-android
-dotnet run  --project WardrobeAI/WardrobeAI.csproj -f net10.0-android
+dotnet run --project WardrobeAI/WardrobeAI.csproj -f net10.0-android
 
-# iOS / Mac Catalyst (macOS host required)
+# Mac Catalyst (macOS host required)
 dotnet build WardrobeAI/WardrobeAI.csproj -f net10.0-maccatalyst
-dotnet run  --project WardrobeAI/WardrobeAI.csproj -f net10.0-maccatalyst
+dotnet run --project WardrobeAI/WardrobeAI.csproj -f net10.0-maccatalyst
 ```
 
-The first launch seeds a default user (Alex Rivera) into the local
-SQLite database at `FileSystem.AppDataDirectory/wardrobe.db` and
-lands on the Dashboard tab.
+The first launch creates/updates the local SQLite database at `FileSystem.AppDataDirectory/wardrobe.db`, seeds a default user, and opens the Dashboard.
 
-## Project Structure
+## How to Use
 
-```
-WardrobeAI/
-├── AI/                  Azure OpenAI service implementations + scoring
-├── Constants/           Closet attribute catalogs (ClothingOptions)
-├── Contracts/           Cross-cutting DTOs (weather, etc.)
-├── Converters/          XAML value converters
-├── Data/                EF Core DbContext
-├── Helpers/             Result<T> + small utilities
-├── Models/              Persistence entities
-├── Platforms/           Per-platform code (Android, iOS, Windows, Mac)
-├── Repositories/        EF Core repositories
-├── Resources/           Images, fonts, raw assets (wardrobe.json), styles
-├── Services/            Cross-cutting services (weather, user, analysis, …)
-├── ViewModels/          MVVM view models (one per page + tab host)
-└── Views/               XAML pages (Dashboard, Closet, OutfitPlanner, Shopping, Profile)
-```
+1. Open Dashboard to review the suggested outfit, weather, and upcoming plans.
+2. Add clothing in Closet and use the filters to browse your wardrobe.
+3. Open Plan, choose an occasion and date, and review the suggested outfit, scores, alternatives, and explanation.
+4. Browse Shop for missing wardrobe essentials and review budget information or retailer links.
+5. Adjust style preferences and budget from Profile.
 
-## Notes for Customers
+## Notes
 
-- The sample was built to demonstrate control patterns (chip groups,
-  popups, gauges, rotator), MVVM with `CommunityToolkit.Mvvm`, and
-  the end-to-end Azure OpenAI flow with structured outputs.
-- The two `MauiXaml Update="…" Inflator="Runtime"` lines in
-  `WardrobeAI.csproj` are intentional workarounds for MAUIG1001
-  parse failures on `SfTabView` and `SfChip` XAML under the source
-  generator. They keep the rest of the app on the faster source-gen
-  path.
-- The `MauiMaterialAssets.ttf` font registration in `MauiProgram.cs`
-  points at the .ttf file that ships inside the
-  `Syncfusion.Maui.Core` NuGet package — no need to bundle a copy
-  under `Resources/Fonts/`.
+- This sample demonstrates Syncfusion controls, MVVM with `CommunityToolkit.Mvvm`, local SQLite persistence through EF Core, and Azure OpenAI structured-output recommendations.
+- The default Azure OpenAI settings are placeholders. Configure actual endpoint, key, deployment, and API version values to enable live model calls.
+- Open-Meteo provides weather/geolocation data without an API key.
+- `WardrobeAI.csproj` forces runtime XAML inflation for the tab host and outfit planner pages to work around MAUIG1001 source-generator parsing issues; the remaining XAML continues to use source generation.
+- `MauiMaterialAssets.ttf` is provided by the `Syncfusion.Maui.Core` NuGet package and does not need to be copied into the project.
+- Project Type and Priority are not applicable to this sample.
+
+## Key Highlights
+
+- Responsive wardrobe experience across mobile and desktop layouts.
+- AI-assisted daily outfit planning and shopping recommendations, with offline fallback behavior.
+- Persistent clothing and outfit data stored locally in SQLite.
+- Weather-aware outfit suggestions and a curated missing-essentials catalog.
+- Practical examples of Syncfusion MAUI controls and shared MVVM patterns.
+
+## Troubleshooting
+
+- **The app does not build for a target:** Confirm that .NET 10 SDK and the required MAUI workloads are installed, and that the target is supported on the current host.
+- **AI recommendations use fallback results:** Check that `AzureOpenAiOptions` has a valid endpoint, API key, deployment name, and API version in the runtime configuration, then restart the app.
+- **Syncfusion controls show a trial watermark:** Set `SYNCFUSION_LICENSE_KEY` before launching and verify that the key is valid for the installed Syncfusion packages.
+- **Weather information is unavailable:** Check network connectivity and whether the Open-Meteo service is reachable; it does not require an API key.
+- **Location is unavailable:** Verify that location permission is granted to the app and that the device or emulator provides location data.
+
+## License
+
+Syncfusion controls are subject to the Syncfusion license. A free community license may be available to qualifying individuals and small businesses; see Syncfusion's licensing terms for eligibility. No separate project license is specified in the sample directory.
