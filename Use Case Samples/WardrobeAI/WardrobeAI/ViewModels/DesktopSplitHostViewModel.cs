@@ -164,6 +164,11 @@ public partial class DesktopSplitHostViewModel : ObservableObject
     public bool HasProfileImage => _dashboard.HasProfileImage;
     public string InitialsAvatarName => _dashboard.InitialsAvatarName;
     public string ProfileStyleBadge => _dashboard.ProfileStyleBadge;
+    public int ProfileOutfitCount => _dashboard.ProfileOutfitCount;
+    public int ProfileClothingItemCount => _dashboard.ProfileClothingItemCount;
+    public System.Collections.ObjectModel.ObservableCollection<string> ProfilePaletteHexes => _dashboard.ProfilePaletteHexes;
+    public System.Collections.ObjectModel.ObservableCollection<string> ProfileStylePreferences => _dashboard.ProfileStylePreferences;
+    public ICommand CurateProfileCommand => _dashboard.CurateProfileCommand;
 
     private void OnDashboardPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -184,6 +189,21 @@ public partial class DesktopSplitHostViewModel : ObservableObject
                 break;
             case nameof(DashboardViewModel.ProfileStyleBadge):
                 OnPropertyChanged(nameof(ProfileStyleBadge));
+                break;
+            case nameof(DashboardViewModel.ProfileOutfitCount):
+                OnPropertyChanged(nameof(ProfileOutfitCount));
+                break;
+            case nameof(DashboardViewModel.ProfileClothingItemCount):
+                OnPropertyChanged(nameof(ProfileClothingItemCount));
+                break;
+            case nameof(DashboardViewModel.ProfilePaletteHexes):
+                OnPropertyChanged(nameof(ProfilePaletteHexes));
+                break;
+            case nameof(DashboardViewModel.ProfileStylePreferences):
+                OnPropertyChanged(nameof(ProfileStylePreferences));
+                break;
+            case nameof(DashboardViewModel.CurateProfileCommand):
+                OnPropertyChanged(nameof(CurateProfileCommand));
                 break;
         }
     }

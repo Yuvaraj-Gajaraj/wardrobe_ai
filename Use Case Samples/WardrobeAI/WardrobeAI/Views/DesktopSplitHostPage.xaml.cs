@@ -53,6 +53,7 @@ public partial class DesktopSplitHostPage : ContentPage
         _closetPlannerPane = closetPlannerPane;
         BindingContext = viewModel;
         InitializeComponent();
+        ProfileInfoPopup.BindingContext = viewModel;
 
         // Host the two pane ContentPages inside the ContentView
         // placeholders. ContentPage derives from Page (not View),

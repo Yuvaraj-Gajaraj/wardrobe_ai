@@ -51,7 +51,7 @@ public interface IWardrobeEssentialsCatalog
     /// result is cached for the lifetime of the process; callers can call
     /// this on every page visit without paying the read/parse cost twice.
     /// </summary>
-    IReadOnlyList<WardrobeEssentialItem> LoadCatalog();
+    Task<IReadOnlyList<WardrobeEssentialItem>> LoadCatalogAsync();
 
     /// <summary>
     /// Computes the essentials the user is still missing, ranked by
@@ -59,5 +59,5 @@ public interface IWardrobeEssentialsCatalog
     /// then by <see cref="EssentialItemCard.Name"/>.
     /// </summary>
     /// <param name="closet">All <see cref="ClothingItem"/> rows owned by the user (may be empty).</param>
-    IReadOnlyList<EssentialItemCard> BuildMissingEssentials(IReadOnlyList<ClothingItem> closet);
+    Task<IReadOnlyList<EssentialItemCard>> BuildMissingEssentialsAsync(IReadOnlyList<ClothingItem> closet);
 }

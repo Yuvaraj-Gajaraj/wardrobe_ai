@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <!--
     Desktop host page: persistent left side rail + 2 split-view panes
     (Dashboard + Shopping, Closet + Planner) toggled by `IsVisible`.
@@ -261,7 +261,7 @@
                                   StrokeThickness="0"/>
             </popup:SfPopup.PopupStyle>
             <popup:SfPopup.ContentTemplate>
-                <DataTemplate x:DataType="vm:DashboardViewModel">
+                <DataTemplate x:DataType="vm:DesktopSplitHostViewModel">
                     <VerticalStackLayout Spacing="0" Padding="0">
                         <Grid ColumnDefinitions="Auto,*,Auto"
                                   ColumnSpacing="12"
