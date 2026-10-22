@@ -76,14 +76,14 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         _smartShoppingService = smartShoppingService;
         _logger = logger;
 
-        // Empty defaults; populated by LoadAsync() once a user is signed in.
+        // Empty defaults; populated by LoadAsync() after the default user is initialized.
         CompletionScore = 0;
         ItemsOwned = 0;
         ItemsTarget = 25;
         MonthlyBudget = "$0";
-        BudgetAdvice = "Sign in to set a monthly shopping budget.";
+        BudgetAdvice = "Your shopping budget will appear here.";
         AnalysisTitle = "Wardrobe Analysis";
-        AnalysisSubtitle = "Sign in to see your personal gaps.";
+        AnalysisSubtitle = "Your wardrobe gaps will appear here.";
         SortLabel = "SORT: BEST VALUE";
         IsLoading = false;
         IsSignedOut = true;
@@ -719,9 +719,9 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         ItemsOwned = 0;
         ItemsTarget = 25;
         MonthlyBudget = "$0";
-        BudgetAdvice = "Sign in to set a monthly shopping budget.";
-        AnalysisTitle = "Sign in to see your wardrobe analysis";
-        AnalysisSubtitle = "We'll analyze your closet and surface the missing essentials.";
+        BudgetAdvice = "Your shopping budget will appear here.";
+        AnalysisTitle = "Wardrobe analysis is unavailable";
+        AnalysisSubtitle = "Your closet analysis and missing essentials will appear here.";
         SortLabel = "SORT: BEST VALUE";
         MissingEssentials.Clear();
         Recommendations.Clear();

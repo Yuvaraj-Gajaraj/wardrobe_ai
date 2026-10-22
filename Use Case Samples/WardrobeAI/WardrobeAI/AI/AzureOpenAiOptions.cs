@@ -1,15 +1,14 @@
 namespace WardrobeAI.AI;
 
 /// <summary>
-/// Strongly-typed binding for the <c>AzureOpenAI</c> configuration section
-/// (see <c>appsettings.json</c> + <c>Preferences</c> overrides).
+/// Options for the Azure OpenAI services. The app currently registers these
+/// options with their defaults in <c>MauiProgram.cs</c>; it does not bind them
+/// from an <c>appsettings.json</c> file or .NET MAUI Preferences.
 ///
-/// <para>All three values are intentionally empty strings until the user
-/// supplies their Azure OpenAI endpoint, key, and deployment name. The
-/// service short-circuits with a friendly
-/// <c>Result.Fail("AI.NotConfigured", "...")</c> when the endpoint or
-/// deployment is blank — the dashboard falls back to its existing static
-/// placeholder copy instead of throwing at the user.</para>
+/// <para>The default values are placeholders. Replace them for local testing
+/// or explicitly add a secure configuration source in <c>MauiProgram.cs</c>
+/// to enable Azure OpenAI. When the endpoint, key, or deployment is not
+/// configured, the AI services use their fallback behavior instead.</para>
 /// </summary>
 public sealed class AzureOpenAiOptions
 {
@@ -47,8 +46,8 @@ public sealed class AzureOpenAiOptions
     /// <c>UriFormatException: Invalid URI: The format of the URI could not
     /// be determined.</c> at app startup before any fallback path could
     /// run. Validating the URI here keeps the singletons constructable
-    /// against placeholder config so the deterministic offline path can
-    /// take over without crashing the app on first run.
+    /// against placeholder config so the fallback path can take over without
+    /// crashing the app on first run.
     /// </remarks>
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Endpoint)

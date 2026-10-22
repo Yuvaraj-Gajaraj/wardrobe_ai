@@ -387,7 +387,7 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
             var userId = _userContext.GetCurrentUserId();
             if (userId <= 0)
             {
-                ApplyEmptyState("Sign in to plan an outfit.");
+                ApplyEmptyState("Outfit planning is unavailable right now.");
                 return;
             }
 
