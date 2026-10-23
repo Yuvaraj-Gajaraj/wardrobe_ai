@@ -58,7 +58,9 @@ public sealed class AzureOpenAIService
         };
 
         var result = await _lowClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
-        var tier = (result.Value.Content[0].Text ?? string.Empty).Trim().ToUpperInvariant();
+        var tier = result.Value.Content.Count > 0
+            ? (result.Value.Content[0].Text ?? string.Empty).Trim().ToUpperInvariant()
+            : string.Empty;
 
         return tier switch
         {

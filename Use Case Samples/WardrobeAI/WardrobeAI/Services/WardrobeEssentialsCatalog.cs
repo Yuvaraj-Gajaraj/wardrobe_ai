@@ -233,7 +233,7 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
         if (n.Contains("shorts")) return "Shorts";
         if (n.Contains("kurta") || n.Contains("traditional")) return "Kurtas";
         if (n.Contains("sneakers")) return "Footwear";
-        if (n.Contains("loafers") || n.Contains("formal") && n.Contains("shoes")) return "Footwear";
+        if (n.Contains("loafers") || (n.Contains("formal") && n.Contains("shoes"))) return "Footwear";
         if (n.Contains("running") && n.Contains("shoes")) return "Activewear";
         if (n.Contains("belt")) return "Accessories";
         return "Essentials";
@@ -430,17 +430,14 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
             _              => (20, 60),
         };
 
-        // Stable, deterministic-per-name offset: same name → same price,
-        // different name → different price within the band. Use
-        // string.GetHashCode (process-local but stable for the AppDomain
-        // lifetime, which is fine since the price is recomputed on every
-        // page load and just needs to be internally consistent across
-        // the visible cards in one render).
-        var hash = Math.Abs((essentialName ?? string.Empty)
-            .ToLowerInvariant()
-            .GetHashCode());
+        // FNV-1a produces the same per-name offset across process restarts.
+        var hash = 2166136261u;
+        foreach (var character in (essentialName ?? string.Empty).ToLowerInvariant())
+        {
+            hash = (hash ^ character) * 16777619u;
+        }
         var span = Math.Max(1, high - low);
-        var offset = hash % span;
+        var offset = (int)(hash % (uint)span);
         var price = low + offset;
         return $"${price}";
     }

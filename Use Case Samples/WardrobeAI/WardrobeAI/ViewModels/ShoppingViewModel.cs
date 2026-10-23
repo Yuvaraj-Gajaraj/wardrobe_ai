@@ -511,7 +511,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         if (n.Contains("chinos") || n.Contains("trousers")) return "Trousers";
         if (n.Contains("shorts")) return "Shorts";
         if (n.Contains("kurta") || n.Contains("traditional")) return "Kurtas";
-        if (n.Contains("sneakers") || n.Contains("loafers") || n.Contains("formal") && n.Contains("shoes")) return "Footwear";
+        if (n.Contains("sneakers") || n.Contains("loafers") || (n.Contains("formal") && n.Contains("shoes"))) return "Footwear";
         if (n.Contains("running") && n.Contains("shoes")) return "Activewear";
         if (n.Contains("belt")) return "Accessories";
         return "Essentials";
@@ -619,11 +619,13 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             _              => (20, 60),
         };
 
-        var hash = Math.Abs((essentialName ?? string.Empty)
-            .ToLowerInvariant()
-            .GetHashCode());
+        var hash = 2166136261u;
+        foreach (var character in (essentialName ?? string.Empty).ToLowerInvariant())
+        {
+            hash = (hash ^ character) * 16777619u;
+        }
         var span = Math.Max(1, high - low);
-        var offset = hash % span;
+        var offset = (int)(hash % (uint)span);
         return $"${low + offset}";
     }
 

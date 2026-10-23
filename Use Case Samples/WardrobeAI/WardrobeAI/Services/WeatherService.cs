@@ -60,7 +60,7 @@ public sealed class WeatherService : IWeatherService
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             })
         {
-            Timeout = TimeSpan.FromSeconds(100)
+            Timeout = TimeSpan.FromSeconds(10)
         };
         if (!_http.DefaultRequestHeaders.UserAgent.TryParseAdd("WardrobeAI/1.0 (+https://wardrobeai.example)"))
         {

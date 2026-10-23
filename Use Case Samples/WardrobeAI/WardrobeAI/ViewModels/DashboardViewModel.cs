@@ -19,7 +19,7 @@ namespace WardrobeAI.ViewModels;
 /// The Upcoming Plans list is sourced live from the user's <see cref="Data.WardrobeDbContext"/>
 /// <c>PlannedOutfits</c> rows — never dummy data.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject, ITabRefreshable
+public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDisposable
 {
     private readonly WardrobeDbContext _db;
     private readonly IUserContext _userContext;
@@ -113,38 +113,12 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
         // without having to navigate back to the Dashboard tab.
         PlanEvents.PlanSaved += OnPlanSaved;
         ClothingItemEvents.ItemAdded += OnClothingItemAdded;
-
-        // Belt-and-braces: kick off an initial refresh as soon as the VM is
-        // constructed. The SfTabView host page (MainTabHostPage) also calls
-        // RefreshAsync via ITabRefreshable from its own OnAppearing, but the
-        // host page's OnAppearing does not always fire on the first reveal
-        // (Shell + DataTemplate changes can swallow it on Windows), and the
-        // Dashboard page itself is reparented into a ContentView so its own
-        // OnAppearing no longer runs. Doing it here guarantees the live
-        // user name, weather chip, and upcoming plans show up without a
-        // manual tab switch, even when the host's OnAppearing is skipped.
-        // Fire-and-forget: any failure is logged inside each individual
-        // refresh method, and the OnAppearing path will retry on
-        // re-collection.
-        _ = InitialRefreshAsync();
     }
 
-    private async Task InitialRefreshAsync()
+    public void Dispose()
     {
-        try
-        {
-            await LoadUserContextAsync();
-            await RefreshWeatherAsync();
-            await LoadUpcomingPlansAsync();
-            await RefreshTodaysOutfitAsync();
-        }
-        catch (Exception ex)
-        {
-            // Each leaf method already logs its own failure. This is here
-            // only so a transient task-cancellation or torn-down DbContext
-            // doesn't surface as an unobserved exception.
-            _logger.LogDebug(ex, "Dashboard initial refresh failed.");
-        }
+        PlanEvents.PlanSaved -= OnPlanSaved;
+        ClothingItemEvents.ItemAdded -= OnClothingItemAdded;
     }
 
     [ObservableProperty]
@@ -182,16 +156,17 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
         {
             return string.Empty;
         }
-        if (parts.Length == 1)
-        {
-            return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
-        }
-        return string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
+
+        return parts.Length == 1
+            ? parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant()
+            : string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
     }
     [ObservableProperty] private string _greeting = string.Empty;
     [ObservableProperty] private string _todayDate = string.Empty;
     [ObservableProperty] private string _weather = string.Empty;
-    [ObservableProperty] private string _weatherIconSource = "cloudy";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WeatherImage))]
+    private string _weatherIconSource = "cloudy";
     [ObservableProperty] private string _weatherLocationLabel = string.Empty;
     [ObservableProperty] private bool _isWeatherLoading;
     [ObservableProperty]
@@ -288,8 +263,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
             var clothingForUser = _db.ClothingItems.AsNoTracking().Where(c => c.UserId == userId);
             ProfileClothingItemCount = await clothingForUser.CountAsync();
 
-            // Top-3 palette — same query shape as ProfileViewModel so the
-            // popup mirrors the dedicated profile page.
+            // Top-3 palette for the popup.
             var topColors = await clothingForUser
                 .GroupBy(c => c.Color)
                 .Select(g => new { Color = g.Key, Count = g.Count() })

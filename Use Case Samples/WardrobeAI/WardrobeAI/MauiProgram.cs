@@ -105,12 +105,8 @@ namespace WardrobeAI
             // against the catalog and returns the items they're still missing
             // — rendered as a card feed on the Shopping page.
             builder.Services.AddSingleton<IWardrobeEssentialsCatalog, WardrobeEssentialsCatalog>();
-#if ANDROID
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.Android.GeolocationProvider>();
-#elif IOS || MACCATALYST
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.iOS.GeolocationProvider>();
-#elif WINDOWS
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.Windows.GeolocationProvider>();
+#if ANDROID || IOS || MACCATALYST || WINDOWS
+            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Services.GeolocationProvider>();
 #else
             // Headless / unit-test host — no geolocation available; the dashboard
             // simply shows the placeholder until a platform target is added.

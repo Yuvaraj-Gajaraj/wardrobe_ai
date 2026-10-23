@@ -82,33 +82,43 @@ public partial class MainPageViewModel : ObservableObject
             response.Text = "Validating query with low-end model...";
             var selectedModel = await _aiService.SelectModelAsync(query);
 
-            response.ModelName = selectedModel;
             var hasImage = TryLoadImageAttachment(requestItem, out var imageBytes, out var mediaType);
-            response.Text = hasImage
-                ? $"Routed to {selectedModel}. Analyzing attached image..."
-                : $"Routed to {selectedModel}. Generating response...";
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                response.ModelName = selectedModel;
+                response.Text = hasImage
+                    ? $"Routed to {selectedModel}. Analyzing attached image..."
+                    : $"Routed to {selectedModel}. Generating response...";
 
-            // Show the typing-dots animation while we wait for the model.
-            response.IsGenerating = true;
+                // Show the typing-dots animation while we wait for the model.
+                response.IsGenerating = true;
+            });
 
             var result = hasImage
                 ? await _aiService.GenerateResponseAsync(selectedModel, query, imageBytes, mediaType)
                 : await _aiService.GenerateResponseAsync(selectedModel, query);
 
-            response.InputTokens = result.InputTokens;
-            response.OutputTokens = result.OutputTokens;
-            response.CostText = CostCalculator.FormatUsd(
-                CostCalculator.EstimateUsd(selectedModel, result.InputTokens, result.OutputTokens));
-            response.IsGenerating = false;
-            response.Text = result.Text.Length > MaxResponseChars
-                ? result.Text[..MaxResponseChars] + "\n\n(more)…"
-                : result.Text;
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                response.InputTokens = result.InputTokens;
+                response.OutputTokens = result.OutputTokens;
+                response.CostText = CostCalculator.FormatUsd(
+                    CostCalculator.EstimateUsd(selectedModel, result.InputTokens, result.OutputTokens));
+                response.IsGenerating = false;
+                response.Text = result.Text.Length > MaxResponseChars
+                    ? result.Text[..MaxResponseChars] + "\n\n(more)…"
+                    : result.Text;
+            });
+
         }
         catch (Exception ex)
         {
-            response.IsGenerating = false;
-            response.Text = $"Unable to generate a response. Check Azure OpenAI configuration and availability. Details: {ex.Message}";
-            response.ModelName = string.IsNullOrWhiteSpace(response.ModelName) ? "Router" : response.ModelName;
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                response.IsGenerating = false;
+                response.Text = $"Unable to generate a response. Check Azure OpenAI configuration and availability. Details: {ex.Message}";
+                response.ModelName = string.IsNullOrWhiteSpace(response.ModelName) ? "Router" : response.ModelName;
+            });
         }
     }
 
