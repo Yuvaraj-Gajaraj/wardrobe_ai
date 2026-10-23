@@ -16,13 +16,13 @@ public sealed class AzureOpenAiOptions
     /// e.g. <c>https://your-resource.openai.azure.com/</c> (trailing slash required
     /// by the Azure OpenAI REST contract).
     /// </summary>
-    public string Endpoint { get; set; } = "END_POINT";
+    public string Endpoint { get; set; } = Environment.GetEnvironmentVariable("AZURE_API_BASE") ?? "";
 
     /// <summary>Azure OpenAI API key. Prefer Managed Identity in production; this is the dev-only path.</summary>
-    public string ApiKey { get; set; } = "API_KEY";
+    public string ApiKey { get; set; } = Environment.GetEnvironmentVariable("AZURE_API_KEY") ?? "";
 
     /// <summary>Deployment name (a.k.a. "model" in the Azure portal — e.g. <c>gpt-4o</c>).</summary>
-    public string Deployment { get; set; } = "MODEL";
+    public string Deployment { get; set; } = "gpt-4.1-mini";
 
     /// <summary>API version. Defaults to a stable GA version known to support JSON-schema structured outputs.</summary>
     public string ApiVersion { get; set; } = "API_VERSION";
@@ -38,10 +38,10 @@ public sealed class AzureOpenAiOptions
     /// fallback path.
     /// </summary>
     /// <remarks>
-    /// The endpoint must parse as an absolute HTTP/HTTPS URI — the
-    /// placeholder defaults (<c>"END_POINT"</c>, <c>"API_KEY"</c>,
-    /// <c>"MODEL"</c>) are non-empty but not valid URIs, and previously
-    /// the Azure OpenAI services' singleton ctors would eagerly call
+    /// The endpoint must parse as an absolute HTTP/HTTPS URI. When no
+    /// environment endpoint is configured, the empty default keeps the Azure
+    /// client disabled until an endpoint is supplied. The Azure OpenAI
+    /// services' singleton constructors can therefore avoid eagerly calling
     /// <c>new AzureOpenAIClient(new Uri(opts.Endpoint), ...)</c>, throwing
     /// <c>UriFormatException: Invalid URI: The format of the URI could not
     /// be determined.</c> at app startup before any fallback path could
