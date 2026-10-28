@@ -349,6 +349,9 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
     }
 
     [RelayCommand]
+    private Task GenerateAsync() => LoadContextAsync(forceRegenerate: true);
+
+    [RelayCommand]
     private void SeeAllAlternatives()
     {
         // Hook for a future "Alternatives" bottom-sheet / SfCarousel modal.
@@ -540,20 +543,28 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
     {
         var closetById = closet.ToDictionary(c => c.ItemId);
 
-        // Reset the per-category state, then fill from the AI result. We
-        // preserve the order of <see cref="DefaultCategories"/> so the
-        // chip group and the bound collection stay aligned.
-        Categories.Clear();
+        // Update the existing per-category states in place so controls such
+        // as SfRotator keep a stable ItemsSource identity across generations.
         foreach (var category in DefaultCategories)
         {
             var entry = result.Entries
                 .FirstOrDefault(e => string.Equals(e.Category, category, StringComparison.OrdinalIgnoreCase));
-            var state = new CategoryViewState(category);
+            var state = Categories.FirstOrDefault(c =>
+                string.Equals(c.Category, category, StringComparison.OrdinalIgnoreCase));
+            if (state is null)
+            {
+                state = new CategoryViewState(category);
+                Categories.Add(state);
+            }
+            else
+            {
+                state.Reset();
+            }
+
             if (entry is not null)
             {
                 PopulateCategoryState(state, entry, closetById);
             }
-            Categories.Add(state);
         }
 
         MainThread.BeginInvokeOnMainThread(() =>
@@ -568,6 +579,10 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
         // PropertyChanged, so when ActiveCategory returns a new instance we
         // must re-announce the leaf properties to refresh the RangePointer.
         ActiveCategory?.NotifyAllGaugesChanged();
+        foreach (var category in Categories)
+        {
+            category.NotifyCollectionsChanged();
+        }
 
         // Re-announce the Items + Alternatives collections on the freshly
         // populated ActiveCategory so the SfRotator hero gallery and the

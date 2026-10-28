@@ -520,6 +520,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDi
             return;
         }
 
+        IsOutfitLoading = true;
         try
         {
             var userId = _userContext.GetCurrentUserId();
@@ -531,7 +532,6 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDi
                 return;
             }
 
-            IsOutfitLoading = true;
             var user = await _userRepository.GetAsync(userId);
             // Occasion: prefer today's planned outfit. Fall back to "Casual".
             var today = DateTime.Today;
