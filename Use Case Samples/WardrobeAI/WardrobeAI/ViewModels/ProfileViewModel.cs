@@ -91,7 +91,20 @@ public partial class ProfileViewModel : ObservableObject, ITabRefreshable
     /// Name used to drive the <c>SfAvatarView</c> initials fallback when the
     /// user has no profile picture. Up to two characters are rendered.
     /// </summary>
-    public string InitialsAvatarName => ComputeInitials(UserName);
+    public string InitialsAvatarName => ComputeInitialsAvatarName(UserName);
+
+    private static string ComputeInitialsAvatarName(string? name)
+    {
+        var parts = name?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+        if (parts.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return parts.Length == 1
+            ? parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant()
+            : string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
+    }
 
     partial void OnProfileImageBase64Changed(string? value) => OnPropertyChanged(nameof(HasProfileImage));
     partial void OnUserNameChanged(string value) => OnPropertyChanged(nameof(InitialsAvatarName));
