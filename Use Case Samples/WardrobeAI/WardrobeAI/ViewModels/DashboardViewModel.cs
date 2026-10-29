@@ -113,6 +113,27 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDi
         // without having to navigate back to the Dashboard tab.
         PlanEvents.PlanSaved += OnPlanSaved;
         ClothingItemEvents.ItemAdded += OnClothingItemAdded;
+
+        // Belt-and-braces: start the initial dashboard load when this VM is
+        // constructed. The DashboardPage is reparented into the tab/split host,
+        // where its own OnAppearing lifecycle is not dependable. Host refreshes
+        // remain in place for subsequent tab and pane switches.
+        _ = InitialRefreshAsync();
+    }
+
+    private async Task InitialRefreshAsync()
+    {
+        try
+        {
+            await LoadUserContextAsync();
+            await RefreshWeatherAsync();
+            await LoadUpcomingPlansAsync();
+            await RefreshTodaysOutfitAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Dashboard initial refresh failed.");
+        }
     }
 
     public void Dispose()
