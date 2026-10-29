@@ -156,7 +156,6 @@
                     <chip:SfChipGroup x:Name="StylePreferencesChipGroup"
                                       Style="{StaticResource ProfileStyleChipGroup}"
                                       ItemsSource="{Binding StylePreferences}"
-                                      ItemRemoved="OnStyleChipRemoved"
                                       AutomationId="StylePreferencesChipGroup">
                         <chip:SfChipGroup.ChipLayout>
                             <FlexLayout Wrap="Wrap"

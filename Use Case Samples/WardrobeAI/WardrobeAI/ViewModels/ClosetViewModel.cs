@@ -601,23 +601,8 @@ public partial class ClosetViewModel : ObservableObject, ITabRefreshable
             OnPropertyChanged(nameof(HasClothing));
             OnPropertyChanged(nameof(FilteredClothing));
 
-            // Close the popup only after all state mutations have fired.
-            // Doing this on the UI thread guarantees the bound grid sees
-            // the new item before the popup begins dismissing.
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher is not null && !dispatcher.IsDispatchRequired)
-            {
-                IsAddClothingPopupOpen = false;
-                ResetNewItemForm();
-            }
-            else
-            {
-                await dispatcher!.DispatchAsync(() =>
-                {
-                    IsAddClothingPopupOpen = false;
-                    ResetNewItemForm();
-                });
-            }
+            IsAddClothingPopupOpen = false;
+            ResetNewItemForm();
         }
         catch (Exception ex)
         {
@@ -660,75 +645,7 @@ public partial class ClosetViewModel : ObservableObject, ITabRefreshable
 
         [ObservableProperty] private string _label = string.Empty;
 
-        // Toggle IsSelected through a method so dependent computed-style
-        // properties are also notified. The DataTrigger XAML pattern was
-        // unreliable for SfButton: the control's internal visual-state
-        // manager overwrites Background/TextColor whenever focus/hover
-        // visuals re-apply, leaving the previously-clicked chip "stuck"
-        // on the selected colour.
-        private bool _isSelected;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                if (SetProperty(ref _isSelected, value))
-                {
-                    OnPropertyChanged(nameof(BackgroundBrush));
-                    OnPropertyChanged(nameof(ChipTextColor));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Background brush for the chip – selected uses the primary
-        /// resource, unselected uses the muted surface container.
-        /// Looked up from the application resource dictionary so the
-        /// AppThemeBinding light/dark tokens always resolve correctly.
-        /// </summary>
-        public Brush BackgroundBrush
-        {
-            get
-            {
-                var key = IsSelected ? "Primary" : "SurfaceContainer";
-                var container = Application.Current?.Resources;
-                if (container is not null && container.TryGetValue(key, out var value))
-                {
-                    // Resources may store either a Brush or a Color; normalise
-                    // to Brush so SfButton.Background renders correctly.
-                    if (value is Brush b) return b;
-                    if (value is Color c) return new SolidColorBrush(c);
-                }
-                return new SolidColorBrush(IsSelected
-                    ? Color.FromArgb("#091523")
-                    : Color.FromArgb("#F0EDE9"));
-            }
-        }
-
-        /// <summary>
-        /// Foreground text color that contrasts against
-        /// <see cref="BackgroundBrush"/>.
-        /// </summary>
-        public Color ChipTextColor
-        {
-            get
-            {
-                var container = Application.Current?.Resources;
-                if (IsSelected)
-                {
-                    if (container is not null && container.TryGetValue("OnPrimary", out var v) && v is Color c)
-                    {
-                        return c;
-                    }
-                    return Colors.White;
-                }
-                if (container is not null && container.TryGetValue("OnSurface", out var v2) && v2 is Color c2)
-                {
-                    return c2;
-                }
-                return Colors.Black;
-            }
-        }
+        [ObservableProperty] private bool _isSelected;
     }
 
     /// <summary>
