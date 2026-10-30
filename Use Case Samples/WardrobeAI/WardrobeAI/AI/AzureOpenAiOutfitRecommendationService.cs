@@ -567,52 +567,43 @@ public sealed class AzureOpenAiOutfitRecommendationService : IAIOutfitRecommenda
             var key = category.Trim();
             var occasionRequest = request with { Occasion = key };
 
-            // Build every candidate combo (top + bottom + footwear OR a single
-            // dress + footwear) and score each. Cap to a reasonable upper
-            // bound to keep this O(n) on small closets; the closet is
-            // typically < 100 items, so the Cartesian product is bounded.
+            // Restrict each slot before forming combinations so both candidate
+            // generation and scoring have a predictable upper bound.
+            const int maxItemsPerSlot = 20;
+            var candidateTops = tops
+                .OrderByDescending(item => item.Favorite)
+                .ThenBy(item => item.UsageCount)
+                .Take(maxItemsPerSlot)
+                .ToList();
+            var candidateBottoms = bottoms
+                .OrderByDescending(item => item.Favorite)
+                .ThenBy(item => item.UsageCount)
+                .Take(maxItemsPerSlot)
+                .ToList();
+            var candidateDresses = dresses
+                .OrderByDescending(item => item.Favorite)
+                .ThenBy(item => item.UsageCount)
+                .Take(maxItemsPerSlot)
+                .ToList();
+            var candidateFootwear = footwear
+                .OrderByDescending(item => item.Favorite)
+                .ThenBy(item => item.UsageCount)
+                .Take(maxItemsPerSlot)
+                .ToList();
             var candidates = new List<List<ClothingItemSummary>>();
 
-            if (dresses.Count > 0 && footwear.Count > 0)
-            {
-                foreach (var dress in dresses)
-                {
-                    foreach (var shoe in footwear)
-                    {
-                        candidates.Add(new List<ClothingItemSummary> { dress, shoe });
-                    }
-                }
-            }
-            if (tops.Count > 0 && bottoms.Count > 0 && footwear.Count > 0)
-            {
-                foreach (var top in tops)
-                {
-                    foreach (var bottom in bottoms)
-                    {
-                        foreach (var shoe in footwear)
-                        {
-                            candidates.Add(new List<ClothingItemSummary> { top, bottom, shoe });
-                        }
-                    }
-                }
-            }
+            foreach (var dress in candidateDresses)
+            foreach (var shoe in candidateFootwear)
+                candidates.Add(new List<ClothingItemSummary> { dress, shoe });
 
-            // Cap candidates — sort by deterministic score first, then trim.
-            if (candidates.Count > 200)
-            {
-                candidates = candidates
-                    .OrderByDescending(c => OutfitScorer.ScoreAll(c, key, request.StylePreference, request.Weather.TemperatureC).Match)
-                    .Take(200)
-                    .ToList();
-            }
+            foreach (var top in candidateTops)
+            foreach (var bottom in candidateBottoms)
+            foreach (var shoe in candidateFootwear)
+                candidates.Add(new List<ClothingItemSummary> { top, bottom, shoe });
 
             var scored = candidates
-                .Select(c =>
-                {
-                    var s = OutfitScorer.ScoreAll(c, key, request.StylePreference, request.Weather.TemperatureC);
-                    return (Items: c, Scores: s);
-                })
-                .OrderByDescending(t => t.Scores.Match)
+                .Select(items => (Items: items, Scores: OutfitScorer.ScoreAll(items, key, request.StylePreference, request.Weather.TemperatureC)))
+                .OrderByDescending(candidate => candidate.Scores.Match)
                 .ToList();
 
             if (scored.Count == 0)

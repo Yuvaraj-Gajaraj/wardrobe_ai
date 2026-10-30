@@ -351,13 +351,6 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
     [RelayCommand]
     private Task GenerateAsync() => LoadContextAsync(forceRegenerate: true);
 
-    [RelayCommand]
-    private void SeeAllAlternatives()
-    {
-        // Hook for a future "Alternatives" bottom-sheet / SfCarousel modal.
-        // No-op for now; the alternatives strip already shows up to 2 items.
-    }
-
     /// <summary>
     /// Loads the signed-in user, the live weather, and the closet, then asks
     /// the AI service for a four-category outfit plan. The result is mapped
@@ -437,8 +430,7 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
                     Condition: weather.Condition.ToString(),
                     HumidityPercent: weather.HumidityPercent,
                     LocationLabel: weather.LocationLabel),
-                Closet: closet.Select(MapToSummary).ToList(),
-                TopNItemsPerCategory: 12);
+                Closet: closet.Select(MapToSummary).ToList());
 
             var result = await _outfitAi.GetOutfitsForCategoriesAsync(request, DefaultCategories);
             if (!result.IsSuccess)

@@ -283,12 +283,9 @@
                                         <Label Grid.Column="1" Style="{StaticResource BodyLarge}" Text="{Binding Name}"
                                                TextColor="{AppThemeBinding Light={StaticResource OnSurface}, Dark={StaticResource OnSurfaceDark}}"
                                                VerticalOptions="Center" Margin="12,0,0,0"/>
-                                        <buttons:SfButton Grid.Column="2" Text="&#xe706;" Background="Transparent" StrokeThickness="0"
-                                                          TextColor="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource Gray300}}"
-                                                          Command="{Binding BindingContext.OpenSettingCommand, Source={x:Reference profilePage}}"
-                                                          CommandParameter="{Binding Name}"
-                                                          FontFamily="MaterialAssets"
-                                                          HorizontalOptions="End" VerticalOptions="Center"/>
+                                        <Label Grid.Column="2" Text="&#xe706;" FontFamily="MaterialAssets" FontSize="18"
+                                               TextColor="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource Gray300}}"
+                                               HorizontalOptions="End" VerticalOptions="Center"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

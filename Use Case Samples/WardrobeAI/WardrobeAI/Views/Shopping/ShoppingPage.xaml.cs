@@ -32,11 +32,4 @@ public partial class ShoppingPage : ContentPage
         }
     }
 
-    private void OnPageSizeChanged(object? sender, EventArgs e)
-    {
-        // Reserved for future responsive-layout tweaks (e.g. adjusting the
-        // ContentContainer inner padding based on actual page width).
-        // Keeping the handler present so the XAML SizeChanged binding
-        // resolves cleanly.
-    }
 }

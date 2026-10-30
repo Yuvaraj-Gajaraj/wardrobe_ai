@@ -8,7 +8,6 @@
              xmlns:svc="clr-namespace:WardrobeAI.Services"
              x:Class="WardrobeAI.Views.Shopping.ShoppingPage"
              x:Name="ShoppingRoot"
-             SizeChanged="OnPageSizeChanged"
              x:DataType="vm:ShoppingViewModel">
 
     <Grid RowDefinitions="Auto, *" RowSpacing="0"

@@ -587,8 +587,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDi
                     Condition: weather.Condition.ToString(),
                     HumidityPercent: weather.HumidityPercent,
                     LocationLabel: weather.LocationLabel),
-                Closet: closet.Select(MapToSummary).ToList(),
-                TopNItemsPerCategory: 12);
+                Closet: closet.Select(MapToSummary).ToList());
 
             var result = await _outfitAi.GetDailyOutfitSuggestionAsync(request);
             if (!result.IsSuccess)
@@ -814,9 +813,6 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDi
             ? $"For {occasion}, this look pairs {itemsPart}."
             : $"{title} for {occasion}: {itemsPart}.";
     }
-
-    [RelayCommand]
-    private void OpenSearch() { }
 
     /// <summary>
     /// Resolves a Quick Action tap into the matching main tab. The keys

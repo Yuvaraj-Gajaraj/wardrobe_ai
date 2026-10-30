@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Cryptography;
 
@@ -22,6 +23,9 @@ namespace WardrobeAI.Converters;
 /// </summary>
 public sealed class Base64ToImageSourceConverter : IValueConverter
 {
+    private const int MaxCachedFiles = 500;
+    private static readonly ConcurrentDictionary<string, Task> CachedFiles = new(StringComparer.Ordinal);
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string base64 || string.IsNullOrWhiteSpace(base64))
@@ -46,7 +50,9 @@ public sealed class Base64ToImageSourceConverter : IValueConverter
 
         try
         {
-            var path = GetCachedFilePath(bytes);
+            var hashHex = System.Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            var path = Path.Combine(FileSystem.Current.CacheDirectory, $"wa_base64_{hashHex}.bin");
+            _ = EnsureCachedFileAsync(path, bytes);
             return Microsoft.Maui.Controls.ImageSource.FromFile(path);
         }
         catch
@@ -59,30 +65,34 @@ public sealed class Base64ToImageSourceConverter : IValueConverter
         => throw new NotImplementedException();
 
     /// <summary>
-    /// Writes <paramref name="bytes"/> to a deterministic PNG file under the
-    /// app cache directory and returns its absolute path. The file name is a
-    /// SHA-256 hash of the bytes so the same image content maps to the same
-    /// file across converter invocations (and across <c>SfRotator</c> item
-    /// recycling), and we avoid re-decoding the base64 string on every
-    /// binding pass.
+    /// Writes image bytes to a deterministic cache file and evicts older
+    /// converter files when the cache exceeds its cap.
     /// </summary>
-    private static string GetCachedFilePath(byte[] bytes)
+    private static Task EnsureCachedFileAsync(string path, byte[] bytes)
     {
         var cacheDir = FileSystem.Current.CacheDirectory;
-        Directory.CreateDirectory(cacheDir);
-
-        // SHA-256 over the raw bytes is cheap and produces a stable filename
-        // that won't collide across distinct images but will reuse the same
-        // file when the same image is re-bound (e.g. swiping back and forth
-        // in SfRotator, or re-navigating to the page).
-        var hashHex = System.Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-        var path = Path.Combine(cacheDir, $"wa_base64_{hashHex}.bin");
-
-        if (!File.Exists(path))
+        return CachedFiles.GetOrAdd(path, _ => Task.Run(() =>
         {
-            File.WriteAllBytes(path, bytes);
-        }
+            Directory.CreateDirectory(cacheDir);
+            if (!File.Exists(path))
+            {
+                File.WriteAllBytes(path, bytes);
+            }
+            EvictOldFiles(cacheDir, path);
+        }));
+    }
 
-        return path;
+    private static void EvictOldFiles(string cacheDir, string keepPath)
+    {
+        var files = new DirectoryInfo(cacheDir).GetFiles("wa_base64_*.bin")
+            .Where(file => !string.Equals(file.FullName, keepPath, StringComparison.Ordinal))
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .Skip(MaxCachedFiles - 1)
+            .ToArray();
+        foreach (var file in files)
+        {
+            file.Delete();
+            CachedFiles.TryRemove(file.FullName, out _);
+        }
     }
 }
