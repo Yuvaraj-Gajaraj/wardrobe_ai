@@ -58,9 +58,9 @@ namespace WardrobeAI
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "wardrobe.db");
             builder.Services.AddDbContext<WardrobeDbContext>(options =>
                 options.UseSqlite($"Data Source={dbPath}"));
-            builder.Services.AddSingleton<IUserRepository, UserRepository>();
-            builder.Services.AddSingleton<IPlannedOutfitRepository, PlannedOutfitRepository>();
-            builder.Services.AddSingleton<IClothingItemRepository, ClothingItemRepository>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IPlannedOutfitRepository, PlannedOutfitRepository>();
+            builder.Services.AddScoped<IClothingItemRepository, ClothingItemRepository>();
 
             // NOTE: db.Database.Migrate() used to be called here, inside a BuildServiceProvider
             // block. That is unsafe on Android: it builds an *interim* service provider that
@@ -74,7 +74,7 @@ namespace WardrobeAI
             // IUserContext replaces the removed IAuthService / IOnboardingService —
             // it auto-seeds the AppConstants.DefaultUserName singleton on first run
             // and resolves the active user id for every VM that needs it.
-            builder.Services.AddSingleton<IUserContext, UserContext>();
+            builder.Services.AddScoped<IUserContext, UserContext>();
 
             // AI services (P2.8 — Azure OpenAI daily outfit recommendation).
             // AzureOpenAiOptions defaults are used unless a configuration
@@ -105,12 +105,8 @@ namespace WardrobeAI
             // against the catalog and returns the items they're still missing
             // — rendered as a card feed on the Shopping page.
             builder.Services.AddSingleton<IWardrobeEssentialsCatalog, WardrobeEssentialsCatalog>();
-#if ANDROID
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.Android.GeolocationProvider>();
-#elif IOS || MACCATALYST
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.iOS.GeolocationProvider>();
-#elif WINDOWS
-            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Platforms.Windows.GeolocationProvider>();
+#if ANDROID || IOS || MACCATALYST || WINDOWS
+            builder.Services.AddSingleton<IGeolocationProvider, WardrobeAI.Services.GeolocationProvider>();
 #else
             // Headless / unit-test host — no geolocation available; the dashboard
             // simply shows the placeholder until a platform target is added.

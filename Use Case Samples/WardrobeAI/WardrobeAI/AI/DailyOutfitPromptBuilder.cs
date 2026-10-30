@@ -14,6 +14,11 @@ namespace WardrobeAI.AI;
 /// </summary>
 internal static class DailyOutfitPromptBuilder
 {
+    private static readonly JsonSerializerOptions ClosetJsonOptions = new()
+    {
+        WriteIndented = false,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
     /// <summary>
     /// System prompt inlined verbatim from
     /// <c>AI/PromptTemplates/DailyOutfitRecommendation.md</c>. Kept in sync
@@ -93,11 +98,7 @@ internal static class DailyOutfitPromptBuilder
         sb.AppendLine();
         sb.AppendLine("## Closet (pick `id`s from this list only)");
         sb.AppendLine("```json");
-        sb.AppendLine(JsonSerializer.Serialize(request.Closet, new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        }));
+        sb.AppendLine(JsonSerializer.Serialize(request.Closet, ClosetJsonOptions));
         sb.AppendLine("```");
 
         sb.AppendLine();
@@ -148,11 +149,7 @@ internal static class DailyOutfitPromptBuilder
         sb.AppendLine();
         sb.AppendLine("## Closet (pick `id`s from this list only)");
         sb.AppendLine("```json");
-        sb.AppendLine(JsonSerializer.Serialize(request.Closet, new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        }));
+        sb.AppendLine(JsonSerializer.Serialize(request.Closet, ClosetJsonOptions));
         sb.AppendLine("```");
 
         sb.AppendLine();

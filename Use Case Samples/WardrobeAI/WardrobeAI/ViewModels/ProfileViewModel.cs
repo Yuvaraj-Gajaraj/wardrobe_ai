@@ -91,7 +91,20 @@ public partial class ProfileViewModel : ObservableObject, ITabRefreshable
     /// Name used to drive the <c>SfAvatarView</c> initials fallback when the
     /// user has no profile picture. Up to two characters are rendered.
     /// </summary>
-    public string InitialsAvatarName => ComputeInitials(UserName);
+    public string InitialsAvatarName => ComputeInitialsAvatarName(UserName);
+
+    private static string ComputeInitialsAvatarName(string? name)
+    {
+        var parts = name?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+        if (parts.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return parts.Length == 1
+            ? parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant()
+            : string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
+    }
 
     partial void OnProfileImageBase64Changed(string? value) => OnPropertyChanged(nameof(HasProfileImage));
     partial void OnUserNameChanged(string value) => OnPropertyChanged(nameof(InitialsAvatarName));
@@ -349,9 +362,6 @@ public partial class ProfileViewModel : ObservableObject, ITabRefreshable
         };
     }
 
-    [RelayCommand]
-    private void OpenSetting(string name) { }
-
     // ---- Add-style popup state ----
 
     /// <summary>Drives the <c>SfPopup</c> open/closed state.</summary>
@@ -602,31 +612,6 @@ public partial class ProfileViewModel : ObservableObject, ITabRefreshable
         return staples == 1
             ? $"That buys about 1 quality staple around ${(int)stapleCost} this month."
             : $"That buys about {staples} quality staples around ${(int)stapleCost} each this month.";
-    }
-
-    /// <summary>
-    /// Computes up to two-letter initials from a display name. Used as a
-    /// fallback avatar text when the user has no profile picture.
-    /// </summary>
-    private static string ComputeInitials(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return string.Empty;
-        }
-
-        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-        {
-            return string.Empty;
-        }
-
-        if (parts.Length == 1)
-        {
-            return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
-        }
-
-        return string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
     }
 
     public sealed record ColorSwatch(string Hex);

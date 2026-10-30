@@ -16,8 +16,8 @@ If a per-model credential is not set, the service falls back to:
 
 | Variable | Purpose |
 | --- | --- |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI resource URI, e.g. `https://YOUR-RESOURCE.openai.azure.com/` |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key |
+| `AZURE_API_BASE` | Azure OpenAI resource URI, e.g. `https://YOUR-RESOURCE.openai.azure.com/` |
+| `AZURE_API_KEY` | Azure OpenAI API key |
 
 ### Per-model credentials
 
@@ -32,7 +32,7 @@ matches the model name (uppercased, with `.`, `-`, ` ` replaced by `_`):
 The lookup order for each model is:
 
 1. `AZURE_API_BASE_<MODEL>` / `AZURE_API_KEY_<MODEL>` (per-model)
-2. `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_API_KEY` (shared)
+2. `AZURE_API_BASE` / `AZURE_API_KEY` (shared)
 3. Dummy placeholder values (so the app still compiles and runs)
 
 ### Per-model pricing (optional, accurate cost)

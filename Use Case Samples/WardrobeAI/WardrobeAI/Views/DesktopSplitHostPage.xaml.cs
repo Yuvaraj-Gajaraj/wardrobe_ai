@@ -53,6 +53,7 @@ public partial class DesktopSplitHostPage : ContentPage
         _closetPlannerPane = closetPlannerPane;
         BindingContext = viewModel;
         InitializeComponent();
+        ProfileInfoPopup.BindingContext = viewModel;
 
         // Host the two pane ContentPages inside the ContentView
         // placeholders. ContentPage derives from Page (not View),
@@ -101,13 +102,6 @@ public partial class DesktopSplitHostPage : ContentPage
         _closetPlannerPane.EnsureChildrenAttached();
         _ = EnsureDashboardShoppingChildrenAttachedAsync();
 
-        // Apply the active row up front so the side rail reads
-        // correctly *before* the first OnAppearing completes (the
-        // "Dashboard & Shopping" row was already styled active in
-        // XAML; this is a defensive backstop in case brush
-        // resolution ever changes).
-        HighlightActiveMenuRow();
-
         // Mirror MainTabHostPage's per-tab refresh-on-switch
         // behaviour for the two desktop panes: when the user
         // switches panes, refresh the *now visible* pane so its
@@ -155,8 +149,6 @@ public partial class DesktopSplitHostPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        HighlightActiveMenuRow();
 
         // The host drives the column reparenting in its ctor
         // (see the EnsureChildrenAttached* calls there) because
@@ -221,8 +213,6 @@ public partial class DesktopSplitHostPage : ContentPage
 
     private async void OnPaneChanged(object? sender, DesktopSplitPane pane)
     {
-        HighlightActiveMenuRow();
-
         try
         {
             // Re-fire the per-pane refresh on switch so the
@@ -331,37 +321,4 @@ public partial class DesktopSplitHostPage : ContentPage
         _viewModel.SelectedPane = DesktopSplitPane.ClosetPlanner;
     }
 
-    /// <summary>
-    /// Applies the active state to the currently selected rail row
-    /// and resets every other row to the inactive colour + icon.
-    /// Idempotent and cheap — called from <see cref="OnAppearing"/>
-    /// and from <see cref="OnPaneChanged"/>.
-    /// </summary>
-    private void HighlightActiveMenuRow()
-    {
-        var resources = Application.Current?.Resources;
-        if (resources is null)
-        {
-            return;
-        }
-        var activeBg = (Color)resources["Primary"];
-        var activeFg = (Color)resources["OnPrimary"];
-        var inactiveBg = Colors.Transparent;
-        var inactiveFg = (Color)(resources["OnSurface"] ?? Colors.Black);
-
-        // Each rail row is independently active iff *its own* pane is
-        // selected. The two checks must be mutually exclusive so a tap
-        // lights up exactly one row. (An earlier version drove both
-        // rows from a single tuple of icon tags, which produced the
-        // "both rows look selected" symptom on initial load.)
-        var isDashboardActive = _viewModel.SelectedPane == DesktopSplitPane.DashboardShopping;
-        DashboardShoppingRowBackground.BackgroundColor = isDashboardActive ? activeBg : inactiveBg;
-        DashboardShoppingRowLabel.TextColor = isDashboardActive ? activeFg : inactiveFg;
-        DashboardShoppingRowIcon.Source = isDashboardActive ? "dashboard_white.png" : "dashboard.png";
-
-        var isClosetActive = _viewModel.SelectedPane == DesktopSplitPane.ClosetPlanner;
-        ClosetPlannerRowBackground.BackgroundColor = isClosetActive ? activeBg : inactiveBg;
-        ClosetPlannerRowLabel.TextColor = isClosetActive ? activeFg : inactiveFg;
-        ClosetPlannerRowIcon.Source = isClosetActive ? "hanger_white.png" : "hanger.png";
-    }
 }

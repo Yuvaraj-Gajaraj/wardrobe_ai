@@ -19,7 +19,7 @@ namespace WardrobeAI.ViewModels;
 /// The Upcoming Plans list is sourced live from the user's <see cref="Data.WardrobeDbContext"/>
 /// <c>PlannedOutfits</c> rows — never dummy data.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject, ITabRefreshable
+public partial class DashboardViewModel : ObservableObject, ITabRefreshable, IDisposable
 {
     private readonly WardrobeDbContext _db;
     private readonly IUserContext _userContext;
@@ -114,18 +114,10 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
         PlanEvents.PlanSaved += OnPlanSaved;
         ClothingItemEvents.ItemAdded += OnClothingItemAdded;
 
-        // Belt-and-braces: kick off an initial refresh as soon as the VM is
-        // constructed. The SfTabView host page (MainTabHostPage) also calls
-        // RefreshAsync via ITabRefreshable from its own OnAppearing, but the
-        // host page's OnAppearing does not always fire on the first reveal
-        // (Shell + DataTemplate changes can swallow it on Windows), and the
-        // Dashboard page itself is reparented into a ContentView so its own
-        // OnAppearing no longer runs. Doing it here guarantees the live
-        // user name, weather chip, and upcoming plans show up without a
-        // manual tab switch, even when the host's OnAppearing is skipped.
-        // Fire-and-forget: any failure is logged inside each individual
-        // refresh method, and the OnAppearing path will retry on
-        // re-collection.
+        // Belt-and-braces: start the initial dashboard load when this VM is
+        // constructed. The DashboardPage is reparented into the tab/split host,
+        // where its own OnAppearing lifecycle is not dependable. Host refreshes
+        // remain in place for subsequent tab and pane switches.
         _ = InitialRefreshAsync();
     }
 
@@ -140,11 +132,14 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
         }
         catch (Exception ex)
         {
-            // Each leaf method already logs its own failure. This is here
-            // only so a transient task-cancellation or torn-down DbContext
-            // doesn't surface as an unobserved exception.
             _logger.LogDebug(ex, "Dashboard initial refresh failed.");
         }
+    }
+
+    public void Dispose()
+    {
+        PlanEvents.PlanSaved -= OnPlanSaved;
+        ClothingItemEvents.ItemAdded -= OnClothingItemAdded;
     }
 
     [ObservableProperty]
@@ -182,16 +177,17 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
         {
             return string.Empty;
         }
-        if (parts.Length == 1)
-        {
-            return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
-        }
-        return string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
+
+        return parts.Length == 1
+            ? parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant()
+            : string.Concat(parts[0][0].ToString(), parts[^1][0].ToString()).ToUpperInvariant();
     }
     [ObservableProperty] private string _greeting = string.Empty;
     [ObservableProperty] private string _todayDate = string.Empty;
     [ObservableProperty] private string _weather = string.Empty;
-    [ObservableProperty] private string _weatherIconSource = "cloudy";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WeatherImage))]
+    private string _weatherIconSource = "cloudy";
     [ObservableProperty] private string _weatherLocationLabel = string.Empty;
     [ObservableProperty] private bool _isWeatherLoading;
     [ObservableProperty]
@@ -288,8 +284,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
             var clothingForUser = _db.ClothingItems.AsNoTracking().Where(c => c.UserId == userId);
             ProfileClothingItemCount = await clothingForUser.CountAsync();
 
-            // Top-3 palette — same query shape as ProfileViewModel so the
-            // popup mirrors the dedicated profile page.
+            // Top-3 palette for the popup.
             var topColors = await clothingForUser
                 .GroupBy(c => c.Color)
                 .Select(g => new { Color = g.Key, Count = g.Count() })
@@ -546,6 +541,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
             return;
         }
 
+        IsOutfitLoading = true;
         try
         {
             var userId = _userContext.GetCurrentUserId();
@@ -557,7 +553,6 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
                 return;
             }
 
-            IsOutfitLoading = true;
             var user = await _userRepository.GetAsync(userId);
             // Occasion: prefer today's planned outfit. Fall back to "Casual".
             var today = DateTime.Today;
@@ -592,8 +587,7 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
                     Condition: weather.Condition.ToString(),
                     HumidityPercent: weather.HumidityPercent,
                     LocationLabel: weather.LocationLabel),
-                Closet: closet.Select(MapToSummary).ToList(),
-                TopNItemsPerCategory: 12);
+                Closet: closet.Select(MapToSummary).ToList());
 
             var result = await _outfitAi.GetDailyOutfitSuggestionAsync(request);
             if (!result.IsSuccess)
@@ -819,9 +813,6 @@ public partial class DashboardViewModel : ObservableObject, ITabRefreshable
             ? $"For {occasion}, this look pairs {itemsPart}."
             : $"{title} for {occasion}: {itemsPart}.";
     }
-
-    [RelayCommand]
-    private void OpenSearch() { }
 
     /// <summary>
     /// Resolves a Quick Action tap into the matching main tab. The keys

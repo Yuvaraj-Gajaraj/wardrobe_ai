@@ -26,6 +26,8 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
 
     private readonly ILogger<WardrobeEssentialsCatalog> _logger;
     private List<WardrobeEssentialItem>? _cache;
+    private readonly Dictionary<string, byte[]> _imageBytes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _catalogLoadLock = new(1, 1);
 
     public WardrobeEssentialsCatalog(ILogger<WardrobeEssentialsCatalog> logger)
     {
@@ -33,20 +35,24 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<WardrobeEssentialItem> LoadCatalog()
+    public async Task<IReadOnlyList<WardrobeEssentialItem>> LoadCatalogAsync()
     {
         if (_cache is not null)
         {
             return _cache;
         }
 
+        await _catalogLoadLock.WaitAsync();
         try
         {
-            using var stream = FileSystem.OpenAppPackageFileAsync(AssetFileName)
-                .GetAwaiter()
-                .GetResult();
+            if (_cache is not null)
+            {
+                return _cache;
+            }
+
+            using var stream = await FileSystem.OpenAppPackageFileAsync(AssetFileName);
             using var reader = new StreamReader(stream);
-            var json = reader.ReadToEnd();
+            var json = await reader.ReadToEndAsync();
 
             var parsed = JsonSerializer.Deserialize<List<WardrobeEssentialItem>>(json, JsonOptions);
             if (parsed is null || parsed.Count == 0)
@@ -68,13 +74,17 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
             _cache = new List<WardrobeEssentialItem>();
             return _cache;
         }
+        finally
+        {
+            _catalogLoadLock.Release();
+        }
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<EssentialItemCard> BuildMissingEssentials(IReadOnlyList<ClothingItem> closet)
+    public async Task<IReadOnlyList<EssentialItemCard>> BuildMissingEssentialsAsync(IReadOnlyList<ClothingItem> closet)
     {
         closet ??= Array.Empty<ClothingItem>();
-        var catalog = LoadCatalog();
+        var catalog = await LoadCatalogAsync();
         if (catalog.Count == 0)
         {
             return Array.Empty<EssentialItemCard>();
@@ -130,7 +140,7 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
 
             cards.Add(new EssentialItemCard(
                 Name: entry.Name,
-                ImageSource: ResolveImageSource(entry.Image),
+                ImageSource: await ResolveImageSourceAsync(entry.Image),
                 Link: entry.Link,
                 Category: category,
                 Priority: priority,
@@ -223,7 +233,7 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
         if (n.Contains("shorts")) return "Shorts";
         if (n.Contains("kurta") || n.Contains("traditional")) return "Kurtas";
         if (n.Contains("sneakers")) return "Footwear";
-        if (n.Contains("loafers") || n.Contains("formal") && n.Contains("shoes")) return "Footwear";
+        if (n.Contains("loafers") || (n.Contains("formal") && n.Contains("shoes"))) return "Footwear";
         if (n.Contains("running") && n.Contains("shoes")) return "Activewear";
         if (n.Contains("belt")) return "Accessories";
         return "Essentials";
@@ -315,7 +325,7 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
         return total;
     }
 
-    private static ImageSource? ResolveImageSource(string imageFileName)
+    private async Task<ImageSource?> ResolveImageSourceAsync(string imageFileName)
     {
         if (string.IsNullOrWhiteSpace(imageFileName))
         {
@@ -332,38 +342,34 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
         // across .png / .jpg / .jpeg — wardrobe.json has a few entries
         // whose extension drifted from the shipped file.
         //
-        // The factory passed to ImageSource.FromStream must yield a FRESH
-        // readable stream each call — MAUI invokes the factory more than
-        // once per image (initial decode + reload on layout / theme
-        // changes / virtualization recycling). Capturing a single opened
-        // stream in the closure leaves the second decode reading from an
-        // exhausted/disposed handle, which silently produces a blank
-        // <Image> on the shopping page. Open the candidate lazily inside
-        // the factory instead so each call returns a brand-new stream.
         var normalized = imageFileName.Trim();
         if (normalized.Contains('/') || normalized.Contains('\\'))
         {
             return null;
         }
-        var candidates = BuildCandidateNames(normalized).ToArray();
-        return ImageSource.FromStream(() => OpenShoppingAsset(candidates));
-    }
 
-    private static Stream? OpenShoppingAsset(IReadOnlyList<string> candidates)
-    {
-        foreach (var candidate in candidates)
+        foreach (var candidate in BuildCandidateNames(normalized))
         {
-            try
+            if (!_imageBytes.TryGetValue(candidate, out var bytes))
             {
-                return FileSystem.OpenAppPackageFileAsync(candidate)
-                    .GetAwaiter()
-                    .GetResult();
+                try
+                {
+                    using var stream = await FileSystem.OpenAppPackageFileAsync(candidate);
+                    using var memory = new MemoryStream();
+                    await stream.CopyToAsync(memory);
+                    bytes = memory.ToArray();
+                    _imageBytes[candidate] = bytes;
+                }
+                catch
+                {
+                    continue;
+                }
             }
-            catch
-            {
-                // try the next extension variant
-            }
+
+            var cachedBytes = bytes;
+            return ImageSource.FromStream(() => new MemoryStream(cachedBytes, writable: false));
         }
+
         return null;
     }
 
@@ -424,17 +430,14 @@ public sealed class WardrobeEssentialsCatalog : IWardrobeEssentialsCatalog
             _              => (20, 60),
         };
 
-        // Stable, deterministic-per-name offset: same name → same price,
-        // different name → different price within the band. Use
-        // string.GetHashCode (process-local but stable for the AppDomain
-        // lifetime, which is fine since the price is recomputed on every
-        // page load and just needs to be internally consistent across
-        // the visible cards in one render).
-        var hash = Math.Abs((essentialName ?? string.Empty)
-            .ToLowerInvariant()
-            .GetHashCode());
+        // FNV-1a produces the same per-name offset across process restarts.
+        var hash = 2166136261u;
+        foreach (var character in (essentialName ?? string.Empty).ToLowerInvariant())
+        {
+            hash = (hash ^ character) * 16777619u;
+        }
         var span = Math.Max(1, high - low);
-        var offset = hash % span;
+        var offset = (int)(hash % (uint)span);
         var price = low + offset;
         return $"${price}";
     }

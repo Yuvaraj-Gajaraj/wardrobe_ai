@@ -398,9 +398,8 @@
                         <Label Grid.Column="0" Style="{StaticResource SubtitleMedium}"
                                Text="{Binding ActiveCategory.Category, StringFormat='Alternative Looks · {0}'}"
                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
-                        <buttons:SfButton Grid.Column="1" Text="See all " Background="Transparent" StrokeThickness="0"
-                                          TextColor="{StaticResource OnTertiaryContainer}" FontSize="12"
-                                          Command="{Binding SeeAllAlternativesCommand}" Padding="0"/>
+                        <Label Grid.Column="1" Text="See all" TextColor="{StaticResource OnTertiaryContainer}"
+                               FontSize="12" VerticalOptions="Center"/>
                     </Grid>
                     <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never" HeightRequest="{OnIdiom Phone=200, Default=200}">
                         <HorizontalStackLayout BindableLayout.ItemsSource="{Binding ActiveCategory.Alternatives}" Spacing="12">

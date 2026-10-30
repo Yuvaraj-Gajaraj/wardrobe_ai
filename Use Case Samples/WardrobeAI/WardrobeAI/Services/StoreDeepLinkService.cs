@@ -70,10 +70,12 @@ public sealed class StoreDeepLinkService : IStoreDeepLinkService
         // stripped of URL-encoded slashes & spaces; replace them with hyphens.
         if (string.Equals(entry.Name, "Myntra", StringComparison.OrdinalIgnoreCase))
         {
-            var myntraSlug = rawQuery.Trim()
-                .Replace(" ", "-")
-                .Replace("--", "-")
-                .ToLowerInvariant();
+            var myntraSlug = string.Join(
+                "-",
+                rawQuery.Trim()
+                    .ToLowerInvariant()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(Uri.EscapeDataString));
             return new Uri($"https://www.myntra.com/{myntraSlug}");
         }
 

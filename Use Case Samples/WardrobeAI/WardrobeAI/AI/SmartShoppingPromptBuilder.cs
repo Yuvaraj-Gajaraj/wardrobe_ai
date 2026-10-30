@@ -14,6 +14,11 @@ namespace WardrobeAI.AI;
 /// </summary>
 internal static class SmartShoppingPromptBuilder
 {
+    private static readonly JsonSerializerOptions PromptJsonOptions = new()
+    {
+        WriteIndented = false,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
     /// <summary>
     /// System prompt inlined verbatim from
     /// <c>AI/PromptTemplates/SmartShopping.md</c>. Kept in sync with the
@@ -136,21 +141,13 @@ internal static class SmartShoppingPromptBuilder
         sb.AppendLine();
         sb.AppendLine("## Closet (anchor items the new pieces should pair with)");
         sb.AppendLine("```json");
-        sb.AppendLine(JsonSerializer.Serialize(request.Closet, new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        }));
+        sb.AppendLine(JsonSerializer.Serialize(request.Closet, PromptJsonOptions));
         sb.AppendLine("```");
 
         sb.AppendLine();
         sb.AppendLine("## Catalog (the 21 essential items — pick from THIS list only)");
         sb.AppendLine("```json");
-        sb.AppendLine(JsonSerializer.Serialize(request.Catalog, new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        }));
+        sb.AppendLine(JsonSerializer.Serialize(request.Catalog, PromptJsonOptions));
         sb.AppendLine("```");
 
         sb.AppendLine();

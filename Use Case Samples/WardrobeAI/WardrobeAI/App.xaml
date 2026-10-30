@@ -1,4 +1,4 @@
-﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<?xml version = "1.0" encoding = "UTF-8" ?>
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:WardrobeAI"
@@ -13,7 +13,6 @@
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <converters:StringIsNotNullOrEmptyConverter x:Key="StringIsNotNullOrEmptyConverter"/>
-            <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
             <converters:Base64ToImageSourceConverter x:Key="Base64ToImageSourceConverter"/>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <converters:DateTimeToNullableDateTimeConverter x:Key="DateTimeToNullableDateTimeConverter"/>

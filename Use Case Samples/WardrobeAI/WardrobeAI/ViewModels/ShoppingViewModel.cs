@@ -86,7 +86,6 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         AnalysisSubtitle = "Your wardrobe gaps will appear here.";
         SortLabel = "SORT: BEST VALUE";
         IsLoading = false;
-        IsSignedOut = true;
 
         MissingEssentials = new ObservableCollection<EssentialItemRow>();
         Recommendations = new ObservableCollection<ProductCard>();
@@ -105,7 +104,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
     [ObservableProperty] private string _analysisSubtitle = string.Empty;
     [ObservableProperty] private string _sortLabel = string.Empty;
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private bool _isSignedOut;
+    [ObservableProperty] private bool _isUnavailable;
     [ObservableProperty] private bool _hasEssentialCards;
 
     // ---- Bound collections ----
@@ -131,11 +130,11 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             var userId = _userContext.GetCurrentUserId();
             if (userId <= 0)
             {
-                ResetForSignedOut();
+                ResetUnavailableData();
                 return;
             }
 
-            IsSignedOut = false;
+            IsUnavailable = false;
 
             // 1. Closet + user.
             var closet = await _closetRepository.GetAllForUserAsync(userId);
@@ -388,7 +387,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         // 2. Load the curated 21-item catalog and project it to the AI
         //    request shape (no image / link — the model only needs the
         //    name + category to reason about pairings).
-        var rawCatalog = _essentialsCatalog.LoadCatalog();
+        var rawCatalog = await _essentialsCatalog.LoadCatalogAsync();
         var catalogProjected = new List<SmartShoppingCatalogItem>(rawCatalog.Count);
         foreach (var entry in rawCatalog)
         {
@@ -430,7 +429,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             _logger.LogWarning(
                 "Smart shopping AI returned no picks (code={Code}); falling back to priority-sorted catalog diff.",
                 aiResult.Error?.Code ?? "(none)");
-            return _essentialsCatalog.BuildMissingEssentials(closet).Take(EssentialCardLimit).ToList();
+            return (await _essentialsCatalog.BuildMissingEssentialsAsync(closet)).Take(EssentialCardLimit).ToList();
         }
 
         // 4. Join each AI pick back to the catalog row that produced it
@@ -474,7 +473,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             var resolvedCategory = ResolveCategoryForCatalogEntry(catalogEntry.Name);
             cards.Add(new EssentialItemCard(
                 Name: catalogEntry.Name,
-                ImageSource: ResolveImageSource(catalogEntry.Image),
+                ImageSource: await ResolveImageSourceAsync(catalogEntry.Image),
                 Link: catalogEntry.Link,
                 Category: resolvedCategory,
                 Priority: NormalizePriority(pick.Priority),
@@ -487,7 +486,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         {
             // Fallback if every AI pick was rejected (e.g. all duplicates
             // of items the user already owns).
-            return _essentialsCatalog.BuildMissingEssentials(closet).Take(EssentialCardLimit).ToList();
+            return (await _essentialsCatalog.BuildMissingEssentialsAsync(closet)).Take(EssentialCardLimit).ToList();
         }
 
         return cards;
@@ -512,7 +511,7 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         if (n.Contains("chinos") || n.Contains("trousers")) return "Trousers";
         if (n.Contains("shorts")) return "Shorts";
         if (n.Contains("kurta") || n.Contains("traditional")) return "Kurtas";
-        if (n.Contains("sneakers") || n.Contains("loafers") || n.Contains("formal") && n.Contains("shoes")) return "Footwear";
+        if (n.Contains("sneakers") || n.Contains("loafers") || (n.Contains("formal") && n.Contains("shoes"))) return "Footwear";
         if (n.Contains("running") && n.Contains("shoes")) return "Activewear";
         if (n.Contains("belt")) return "Accessories";
         return "Essentials";
@@ -533,7 +532,9 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         };
     }
 
-    private static ImageSource? ResolveImageSource(string imageFileName)
+    private readonly Dictionary<string, byte[]> _shoppingImageBytes = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task<ImageSource?> ResolveImageSourceAsync(string imageFileName)
     {
         if (string.IsNullOrWhiteSpace(imageFileName))
         {
@@ -548,14 +549,6 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         // fallback paths produce identical ImageSource values for a given
         // wardrobe.json entry.
         //
-        // The factory passed to ImageSource.FromStream must yield a FRESH
-        // readable stream on every call — MAUI invokes the factory more than
-        // once per image (initial decode + reload on layout / theme
-        // changes / virtualization recycling). Capturing a single opened
-        // stream in the closure leaves the second decode reading from an
-        // exhausted/disposed handle, which silently produces a blank
-        // <Image> on the shopping page. Open the candidate lazily inside
-        // the factory instead so each call returns a brand-new stream.
         var normalized = imageFileName.Trim();
         if (normalized.Contains('/') || normalized.Contains('\\'))
         {
@@ -570,26 +563,31 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         var candidates = new[] { normalized }
             .Concat(new[] { ".png", ".jpg", ".jpeg" }
                 .Select(ext => stem + ext)
-                .Where(c => !string.Equals(c, normalized, StringComparison.OrdinalIgnoreCase)))
-            .ToArray();
+                .Where(c => !string.Equals(c, normalized, StringComparison.OrdinalIgnoreCase)));
 
-        return ImageSource.FromStream(() =>
+        foreach (var candidate in candidates)
         {
-            foreach (var candidate in candidates)
+            if (!_shoppingImageBytes.TryGetValue(candidate, out var bytes))
             {
                 try
                 {
-                    return FileSystem.OpenAppPackageFileAsync(candidate)
-                        .GetAwaiter()
-                        .GetResult();
+                    using var stream = await FileSystem.OpenAppPackageFileAsync(candidate);
+                    using var memory = new MemoryStream();
+                    await stream.CopyToAsync(memory);
+                    bytes = memory.ToArray();
+                    _shoppingImageBytes[candidate] = bytes;
                 }
                 catch
                 {
-                    // try the next extension variant
+                    continue;
                 }
             }
-            return Stream.Null;
-        });
+
+            var cachedBytes = bytes;
+            return ImageSource.FromStream(() => new MemoryStream(cachedBytes, writable: false));
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -621,11 +619,13 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
             _              => (20, 60),
         };
 
-        var hash = Math.Abs((essentialName ?? string.Empty)
-            .ToLowerInvariant()
-            .GetHashCode());
+        var hash = 2166136261u;
+        foreach (var character in (essentialName ?? string.Empty).ToLowerInvariant())
+        {
+            hash = (hash ^ character) * 16777619u;
+        }
         var span = Math.Max(1, high - low);
-        var offset = hash % span;
+        var offset = (int)(hash % (uint)span);
         return $"${low + offset}";
     }
 
@@ -712,9 +712,9 @@ public partial class ShoppingViewModel : ObservableObject, ITabRefreshable
         }
     }
 
-    private void ResetForSignedOut()
+    private void ResetUnavailableData()
     {
-        IsSignedOut = true;
+        IsUnavailable = true;
         CompletionScore = 0;
         ItemsOwned = 0;
         ItemsTarget = 25;

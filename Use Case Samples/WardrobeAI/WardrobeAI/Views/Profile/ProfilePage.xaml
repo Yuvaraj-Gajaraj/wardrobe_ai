@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:syncfusion="clr-namespace:Syncfusion.Maui.Core;assembly=Syncfusion.Maui.Core"
@@ -156,7 +156,6 @@
                     <chip:SfChipGroup x:Name="StylePreferencesChipGroup"
                                       Style="{StaticResource ProfileStyleChipGroup}"
                                       ItemsSource="{Binding StylePreferences}"
-                                      ItemRemoved="OnStyleChipRemoved"
                                       AutomationId="StylePreferencesChipGroup">
                         <chip:SfChipGroup.ChipLayout>
                             <FlexLayout Wrap="Wrap"
@@ -178,7 +177,7 @@
                              map to font-size 18 emoji-style placeholders so we
                              don't need a custom font. -->
                         <buttons:SfButton Grid.Column="1"
-                                          Text=""
+                                          Text="✎"
                                           FontSize="18"
                                           Padding="8,4"
                                           Background="Transparent"
@@ -190,10 +189,10 @@
                                           ToolTipProperties.Text="Edit budget">
                             <buttons:SfButton.Triggers>
                                 <DataTrigger TargetType="buttons:SfButton" Binding="{Binding IsEditingBudget}" Value="False">
-                                    <Setter Property="Text" Value=""/>
+                                    <Setter Property="Text" Value="✎"/>
                                 </DataTrigger>
                                 <DataTrigger TargetType="buttons:SfButton" Binding="{Binding IsEditingBudget}" Value="True">
-                                    <Setter Property="Text" Value=""/>
+                                    <Setter Property="Text" Value="✓"/>
                                 </DataTrigger>
                             </buttons:SfButton.Triggers>
                         </buttons:SfButton>
@@ -284,12 +283,9 @@
                                         <Label Grid.Column="1" Style="{StaticResource BodyLarge}" Text="{Binding Name}"
                                                TextColor="{AppThemeBinding Light={StaticResource OnSurface}, Dark={StaticResource OnSurfaceDark}}"
                                                VerticalOptions="Center" Margin="12,0,0,0"/>
-                                        <buttons:SfButton Grid.Column="2" Text="&#xe706;" Background="Transparent" StrokeThickness="0"
-                                                          TextColor="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource Gray300}}"
-                                                          Command="{Binding BindingContext.OpenSettingCommand, Source={x:Reference profilePage}}"
-                                                          CommandParameter="{Binding Name}"
-                                                          FontFamily="MaterialAssets"
-                                                          HorizontalOptions="End" VerticalOptions="Center"/>
+                                        <Label Grid.Column="2" Text="&#xe706;" FontFamily="MaterialAssets" FontSize="18"
+                                               TextColor="{AppThemeBinding Light={StaticResource Outline}, Dark={StaticResource Gray300}}"
+                                               HorizontalOptions="End" VerticalOptions="Center"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

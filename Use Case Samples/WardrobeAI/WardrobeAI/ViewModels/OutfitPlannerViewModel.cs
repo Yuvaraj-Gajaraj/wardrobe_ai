@@ -349,11 +349,7 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
     }
 
     [RelayCommand]
-    private void SeeAllAlternatives()
-    {
-        // Hook for a future "Alternatives" bottom-sheet / SfCarousel modal.
-        // No-op for now; the alternatives strip already shows up to 2 items.
-    }
+    private Task GenerateAsync() => LoadContextAsync(forceRegenerate: true);
 
     /// <summary>
     /// Loads the signed-in user, the live weather, and the closet, then asks
@@ -434,8 +430,7 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
                     Condition: weather.Condition.ToString(),
                     HumidityPercent: weather.HumidityPercent,
                     LocationLabel: weather.LocationLabel),
-                Closet: closet.Select(MapToSummary).ToList(),
-                TopNItemsPerCategory: 12);
+                Closet: closet.Select(MapToSummary).ToList());
 
             var result = await _outfitAi.GetOutfitsForCategoriesAsync(request, DefaultCategories);
             if (!result.IsSuccess)
@@ -540,26 +535,31 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
     {
         var closetById = closet.ToDictionary(c => c.ItemId);
 
-        // Reset the per-category state, then fill from the AI result. We
-        // preserve the order of <see cref="DefaultCategories"/> so the
-        // chip group and the bound collection stay aligned.
-        Categories.Clear();
+        // Update the existing per-category states in place so controls such
+        // as SfRotator keep a stable ItemsSource identity across generations.
         foreach (var category in DefaultCategories)
         {
             var entry = result.Entries
                 .FirstOrDefault(e => string.Equals(e.Category, category, StringComparison.OrdinalIgnoreCase));
-            var state = new CategoryViewState(category);
+            var state = Categories.FirstOrDefault(c =>
+                string.Equals(c.Category, category, StringComparison.OrdinalIgnoreCase));
+            if (state is null)
+            {
+                state = new CategoryViewState(category);
+                Categories.Add(state);
+            }
+            else
+            {
+                state.Reset();
+            }
+
             if (entry is not null)
             {
                 PopulateCategoryState(state, entry, closetById);
             }
-            Categories.Add(state);
         }
 
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            OnPropertyChanged(nameof(ActiveCategory));
-        });
+        OnPropertyChanged(nameof(ActiveCategory));
         HasOutfits = Categories.Any(c => c.HasOutfit);
 
         // The radial gauges bind to nested paths off ActiveCategory (e.g.
@@ -568,6 +568,10 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
         // PropertyChanged, so when ActiveCategory returns a new instance we
         // must re-announce the leaf properties to refresh the RangePointer.
         ActiveCategory?.NotifyAllGaugesChanged();
+        foreach (var category in Categories)
+        {
+            category.NotifyCollectionsChanged();
+        }
 
         // Re-announce the Items + Alternatives collections on the freshly
         // populated ActiveCategory so the SfRotator hero gallery and the
@@ -876,79 +880,18 @@ public partial class OutfitPlannerViewModel : ObservableObject, ITabRefreshable
 
     // ---- Nested types -------------------------------------------------------
 
-    /// <summary>
-    /// One occasion chip in the Outfit Planner (Work / Meeting / Casual / Party).
-    /// Inherits <see cref="ObservableObject"/> and exposes
-    /// <see cref="BackgroundBrush"/> + <see cref="TextColor"/> so the XAML can
-    /// bind to them directly instead of using a <c>DataTrigger</c>. A
-    /// <c>DataTrigger</c> on <c>SfButton.Background</c> competes with the
-    /// <c>VisualStateManager</c>'s <c>CommonStates</c> (<c>Normal</c> /
-    /// <c>PointerOver</c> / <c>Pressed</c>) and the previous color can
-    /// "stick" on subsequent chip taps. Direct property bindings to the chip's
-    /// own brush / color values are evaluated every time the chip raises
-    /// <c>PropertyChanged</c> for those properties, so the visual update is
-    /// deterministic.
-    /// </summary>
     public sealed partial class OccasionChip : ObservableObject
     {
-        /// <summary>Selected chip background — matches the design's "Primary" navy.</summary>
-        private static readonly Brush SelectedBackground = new SolidColorBrush(Color.FromArgb("#091523"));
-
-        /// <summary>Selected chip text — white so it reads on the navy fill.</summary>
-        private static readonly Color SelectedTextColor = Colors.White;
-
-        /// <summary>Unselected chip background — neutral surface.</summary>
-        private static readonly Brush UnselectedBackgroundLight = new SolidColorBrush(Color.FromArgb("#E5E2DD")); // SurfaceContainerHighest
-        private static readonly Brush UnselectedBackgroundDark = new SolidColorBrush(Color.FromArgb("#404040"));   // Gray600
-
-        /// <summary>Unselected chip text — readable on the neutral fill.</summary>
-        private static readonly Color UnselectedTextColorLight = Color.FromArgb("#1C1C19"); // OnSurface
-        private static readonly Color UnselectedTextColorDark = Color.FromArgb("#F4F1EB");  // OnSurfaceDark
-
         public OccasionChip(string label, bool isSelected)
         {
             Label = label;
-            // Assign backing fields directly so the initial binding pass
-            // captures the correct brush / color without a redundant
-            // PropertyChanged raise.
             _isSelected = isSelected;
-            ApplyVisualState();
         }
 
         public string Label { get; }
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(BackgroundBrush))]
-        [NotifyPropertyChangedFor(nameof(TextColor))]
         private bool _isSelected;
-
-        /// <summary>Resolved <see cref="Brush"/> for the chip's <c>Background</c>.</summary>
-        public Brush BackgroundBrush => IsSelected
-            ? SelectedBackground
-            : (Application.Current?.RequestedTheme == AppTheme.Dark
-                ? UnselectedBackgroundDark
-                : UnselectedBackgroundLight);
-
-        /// <summary>Resolved <see cref="Color"/> for the chip's <c>TextColor</c>.</summary>
-        public Color TextColor => IsSelected
-            ? SelectedTextColor
-            : (Application.Current?.RequestedTheme == AppTheme.Dark
-                ? UnselectedTextColorDark
-                : UnselectedTextColorLight);
-
-        partial void OnIsSelectedChanged(bool value)
-        {
-            // Push the new brush / color to any subscribers. PropertyChanged
-            // for both BackgroundBrush and TextColor is raised automatically
-            // by the [NotifyPropertyChangedFor] attributes.
-            ApplyVisualState();
-        }
-
-        private void ApplyVisualState()
-        {
-            // No-op for now — kept as the explicit hook so the brush / color
-            // recompute is colocated with the state flip.
-        }
     }
 
     /// <summary>
