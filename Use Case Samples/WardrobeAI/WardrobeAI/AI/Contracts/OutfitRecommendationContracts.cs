@@ -65,7 +65,6 @@ public sealed record WeatherSummary(
 /// <param name="Occasion">The occasion the outfit must suit (e.g. "Work", "Casual", "Wedding").</param>
 /// <param name="Weather">Current weather snapshot.</param>
 /// <param name="Closet">All clothing items the user owns. Caller is responsible for filtering out items the user has explicitly excluded.</param>
-/// <param name="TopNItemsPerCategory">Soft cap on how many items per category the LLM may pick; the service still pre-sorts by usage+favorite.</param>
 public sealed record OutfitRecommendationRequest(
     int UserId,
     string Gender,
@@ -75,26 +74,7 @@ public sealed record OutfitRecommendationRequest(
     string? Location,
     string Occasion,
     WeatherSummary Weather,
-    IReadOnlyList<ClothingItemSummary> Closet,
-    int TopNItemsPerCategory = 12)
-{
-    /// <summary>Stable hash of the request body, used as the cache key (24h TTL).</summary>
-    public string CacheKey
-    {
-        get
-        {
-            var input = string.Join("|",
-                UserId, Gender, AgeGroup ?? "-", StylePreference, BudgetLevel, Location ?? "-",
-                Occasion,
-                Weather.TemperatureC, Weather.Condition, Weather.HumidityPercent, Weather.LocationLabel,
-                TopNItemsPerCategory,
-                string.Join(",", Closet.Select(c => $"{c.Id}:{c.Category}")));
-            using var sha = System.Security.Cryptography.SHA256.Create();
-            var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
-            return Convert.ToHexString(bytes);
-        }
-    }
-}
+    IReadOnlyList<ClothingItemSummary> Closet);
 
 /// <summary>
 /// One selected clothing item inside the LLM's primary outfit. The service

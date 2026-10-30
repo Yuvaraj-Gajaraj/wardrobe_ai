@@ -362,9 +362,6 @@ public partial class ProfileViewModel : ObservableObject, ITabRefreshable
         };
     }
 
-    [RelayCommand]
-    private void OpenSetting(string name) { }
-
     // ---- Add-style popup state ----
 
     /// <summary>Drives the <c>SfPopup</c> open/closed state.</summary>
